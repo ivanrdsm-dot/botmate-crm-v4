@@ -18,7 +18,7 @@ import {
   Plane, Landmark, Settings, Eye, EyeOff, ChevronDown, RotateCcw,
   AlertCircle, Printer, Filter, MapPin, Phone, Globe, Star
 } from "lucide-react";
-import { generateInvoiceExcel, generateInvoiceExcelMultiItem } from "./invoiceExcel.js";
+import { generateInvoiceExcel, generateInvoiceExcelMultiItem, generateGlobalReport } from "./invoiceExcel.js";
 
 // ─── Database: Supabase ──────────────────────────────────────────────────────
 
@@ -1352,9 +1352,14 @@ ${inv.notes?`<div class="notes-box"><b>Notas:</b> ${inv.notes}</div>`:""}
           </h1>
           <p className="text-gray-500 mt-1">Control de ingresos, planes y cobros</p>
         </div>
-        <button onClick={()=>{setEditingId(null);setForm(emptyForm);setShowModal(true);}} className="flex items-center gap-2 bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-teal-700 shadow-sm">
-          <Plus size={18}/>Nueva Factura
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={()=>generateGlobalReport(invoices, clients)} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 shadow-sm">
+            <Download size={18}/>Reporte Global Excel
+          </button>
+          <button onClick={()=>{setEditingId(null);setForm(emptyForm);setShowModal(true);}} className="flex items-center gap-2 bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-teal-700 shadow-sm">
+            <Plus size={18}/>Nueva Factura
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
