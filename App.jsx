@@ -1150,18 +1150,20 @@ function CotizadorView({ clients }) {
     let numDias = dias;
     let logistica = 0;
 
+    // LOGÍSTICA: solo se cobra IDA (1 vez) en todos los casos.
+    // EXCEPCIÓN: fin de semana se cobra ida Y vuelta porque el robot se recoge.
     if (periodo === "dia") {
       numDias = dias;
-      logistica = logIda * 2; // redondo
+      logistica = logIda; // solo ida — el robot se queda
     } else if (periodo === "finde") {
       numDias = 3;
-      logistica = logIda; // solo ida + viáticos
+      logistica = logIda * 2; // ida + vuelta — se entrega viernes, se recoge domingo
     } else if (periodo === "semana") {
       numDias = 7;
-      logistica = logIda * 2;
+      logistica = logIda; // solo ida — el robot se queda
     } else if (periodo === "mensual") {
       numDias = 30;
-      logistica = logIda; // solo ida
+      logistica = logIda; // solo ida — el robot se queda
     }
 
     const rentaTotal = rentaDiaria * numDias;
@@ -1181,7 +1183,7 @@ function CotizadorView({ clients }) {
         {concepto:`Renta de robot (${numDias} día${numDias>1?"s":""})`, monto: rentaTotal},
         ...(incluirOperador ? [{concepto:`Operador BotMate (${numDias} día${numDias>1?"s":""})`, monto: operadorTotal}] : []),
         ...(incluirBranding ? [{concepto:"Branding personalizado", monto: brandingTotal}] : []),
-        {concepto:`Logística ${ciudad} (${periodo==="mensual"||periodo==="finde"?"solo ida":"ida y vuelta"})`, monto: logistica},
+        {concepto:`Logística ${ciudad} (${periodo==="finde"?"ida y vuelta":"solo ida"})`, monto: logistica},
         ...(viaticos > 0 ? [{concepto:"Viáticos fin de semana", monto: viaticos}] : []),
       ],
       cantidad, subtotal, descuento, descuentoMonto, subtotalConDesc, iva, total, numDias
@@ -1259,10 +1261,15 @@ ${notas ? `<div class="notes"><b>Notas:</b> ${notas}</div>` : ""}
 <div class="validity">* Precios en MXN. Cotización válida por 15 días a partir de la fecha de emisión. IVA incluido en el total.</div>
 <div class="footer"><b>BotMate</b> · ventas@botmate.mx · 56 4666 5718<br>CDMX · Guadalajara · Monterrey · Querétaro y +18 ciudades</div>
 </body></html>`;
-    const w = window.open("","_blank");
-    w.document.write(html);
-    w.document.close();
-    setTimeout(()=>w.print(), 500);
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Cotizacion_${folio}_${selectedClient?.company?.replace(/\s+/g,"_") || "BotMate"}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const sendByWhatsApp = async () => {
