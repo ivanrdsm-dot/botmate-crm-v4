@@ -1098,6 +1098,401 @@ function RobotsView({ robots, rentals, clients, onAddRobot, onEditRobot, onDelet
   );
 }
 
+// ─── COTIZADOR VIEW ──────────────────────────────────────────────────────────
+const LOGISTICS_PRICES = {
+  "CDMX":2875,"Puebla":5843,"Cuernavaca":4444,"Toluca":4380,"Pachuca":5049,"Querétaro":7934,
+  "San Juan del Río":6348,"León":15873,"Irapuato":9521,"Celaya":9521,"Guadalajara":17455,
+  "Monterrey":24523,"Aguascalientes":17455,"San Luis Potosí":15075,"Morelia":14282,"Veracruz":16878,
+  "Oaxaca":14282,"Cancún":46234,"Mérida":37940,"Villahermosa":23803,"Chihuahua":38877,"Tijuana":72850,
+  "Mexicali":65059,"Acapulco":15307,"Puerto Vallarta":24668,"Tampico":19042,"Saltillo":20629,
+  "Colima":22692,"Durango":26500,"Torreón":26183,"Tuxtla Gutiérrez":29862,"Zacatecas":22216,
+  "Tepic":25230,"Mazatlán":30626,"Culiacán":34276,"Hermosillo":55221,"Los Mochis":38877,
+  "Cd. Juárez":54673,"Reynosa":29039,"Matamoros":27452,"Laredo":30466,"Cd. Victoria":23644,
+  "Cd. Obregón":47288,"Campeche":34117,"Coatzacoalcos":20629,"Ensenada":68233
+};
+const QUOTE_ROBOTS = [
+  {id:"cc1",label:"BotMate CC1 — Limpieza",price:307500},
+  {id:"pudubot2",label:"PuduBot 2 — Multifuncional",price:307500},
+];
+
+function CotizadorView({ clients }) {
+  const [tipo, setTipo] = useState("renta"); // renta | venta
+  const [robot, setRobot] = useState("cc1");
+  const [ciudad, setCiudad] = useState("CDMX");
+  const [dias, setDias] = useState(1);
+  const [periodo, setPeriodo] = useState("dia"); // dia | finde | semana | mensual
+  const [incluirOperador, setIncluirOperador] = useState(true);
+  const [incluirBranding, setIncluirBranding] = useState(true);
+  const [cantidad, setCantidad] = useState(1);
+  const [descuento, setDescuento] = useState(0);
+  const [clienteId, setClienteId] = useState("");
+  const [notas, setNotas] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sentMsg, setSentMsg] = useState("");
+  // Venta extras
+  const [incluirInstalacion, setIncluirInstalacion] = useState(true);
+  const [incluirCapacitacion, setIncluirCapacitacion] = useState(true);
+  const [incluirPoliza, setIncluirPoliza] = useState(true);
+  const [incluirSoporte, setIncluirSoporte] = useState(false);
+  // Pago
+  const [mostrarPago, setMostrarPago] = useState("contado"); // contado | 50_50 | msi_3 | msi_6 | msi_12
+
+  const selectedClient = clients.find(c=>c.id===clienteId);
+  const robotInfo = QUOTE_ROBOTS.find(r=>r.id===robot);
+  const logIda = LOGISTICS_PRICES[ciudad] || 0;
+
+  // Calculate pricing
+  const calcRenta = () => {
+    let rentaDiaria = 1500;
+    let operador = incluirOperador ? 1100 : 0;
+    let branding = incluirBranding ? 1100 : 0;
+    let numDias = dias;
+    let logistica = 0;
+
+    if (periodo === "dia") {
+      numDias = dias;
+      logistica = logIda * 2; // redondo
+    } else if (periodo === "finde") {
+      numDias = 3;
+      logistica = logIda; // solo ida + viáticos
+    } else if (periodo === "semana") {
+      numDias = 7;
+      logistica = logIda * 2;
+    } else if (periodo === "mensual") {
+      numDias = 30;
+      logistica = logIda; // solo ida
+    }
+
+    const rentaTotal = rentaDiaria * numDias;
+    const operadorTotal = operador * numDias;
+    const brandingTotal = branding; // branding es una sola vez
+    const viaticos = periodo === "finde" ? 800 * 2 : 0;
+
+    const subtotalUnit = rentaTotal + operadorTotal + brandingTotal + logistica + viaticos;
+    const subtotal = subtotalUnit * cantidad;
+    const descuentoMonto = subtotal * (descuento / 100);
+    const subtotalConDesc = subtotal - descuentoMonto;
+    const iva = subtotalConDesc * 0.16;
+    const total = subtotalConDesc + iva;
+
+    return {
+      desglose: [
+        {concepto:`Renta de robot (${numDias} día${numDias>1?"s":""})`, monto: rentaTotal},
+        ...(incluirOperador ? [{concepto:`Operador BotMate (${numDias} día${numDias>1?"s":""})`, monto: operadorTotal}] : []),
+        ...(incluirBranding ? [{concepto:"Branding personalizado", monto: brandingTotal}] : []),
+        {concepto:`Logística ${ciudad} (${periodo==="mensual"||periodo==="finde"?"solo ida":"ida y vuelta"})`, monto: logistica},
+        ...(viaticos > 0 ? [{concepto:"Viáticos fin de semana", monto: viaticos}] : []),
+      ],
+      cantidad, subtotal, descuento, descuentoMonto, subtotalConDesc, iva, total, numDias
+    };
+  };
+
+  const calcVenta = () => {
+    const precioRobot = robotInfo?.price || 307500;
+    const items = [
+      {concepto:`Robot ${robotInfo?.label}`, monto: precioRobot},
+      ...(incluirInstalacion ? [{concepto:"Instalación y configuración", monto: 5000}] : []),
+      ...(incluirCapacitacion ? [{concepto:"Capacitación (2 días)", monto: 6000}] : []),
+      ...(incluirPoliza ? [{concepto:"Póliza de mantenimiento (1 año)", monto: 17500}] : []),
+      ...(incluirSoporte ? [{concepto:"Soporte técnico mensual (12 meses)", monto: 4500*12}] : []),
+      ...(logIda > 0 && ciudad !== "CDMX" ? [{concepto:`Logística envío a ${ciudad}`, monto: logIda}] : []),
+    ];
+
+    const subtotal = items.reduce((s,i)=>s+i.monto,0) * cantidad;
+    const descuentoMonto = subtotal * (descuento / 100);
+    const subtotalConDesc = subtotal - descuentoMonto;
+    const iva = subtotalConDesc * 0.16;
+    const total = subtotalConDesc + iva;
+
+    return { desglose: items, cantidad, subtotal, descuento, descuentoMonto, subtotalConDesc, iva, total };
+  };
+
+  const calc = tipo === "renta" ? calcRenta() : calcVenta();
+  const fmx = (n) => "$" + (n||0).toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2});
+  const today = new Date().toLocaleDateString("es-MX", {day:"2-digit",month:"long",year:"numeric"});
+  const folio = `COT-${Date.now().toString(36).toUpperCase()}`;
+
+  const generatePDF = () => {
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cotización ${folio}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;color:#1e293b;padding:40px;max-width:800px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #4f46e5}
+.logo{font-size:28px;font-weight:900;color:#4f46e5}.logo span{color:#1e293b}.tagline{font-size:11px;color:#64748b;margin-top:2px}
+.quote-info{text-align:right;font-size:12px;color:#64748b}.quote-info .folio{font-size:16px;font-weight:700;color:#1e293b}
+.section{margin-bottom:24px}.section-title{font-size:14px;font-weight:700;color:#4f46e5;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
+.client-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;font-size:13px}
+.client-box b{color:#1e293b}
+table{width:100%;border-collapse:collapse;margin-top:8px}th{background:#4f46e5;color:white;padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px}
+td{padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px}.text-right{text-align:right}
+.totals{margin-top:16px;display:flex;justify-content:flex-end}.totals-box{width:280px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px}
+.totals-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.totals-row.total{font-size:18px;font-weight:900;color:#4f46e5;border-top:2px solid #4f46e5;padding-top:10px;margin-top:6px}
+.totals-row.desc{color:#10b981;font-weight:600}
+.pago-section{margin-top:24px;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:16px;font-size:13px}
+.pago-section b{color:#92400e}
+.notes{margin-top:20px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px;font-size:12px;color:#166534}
+.footer{margin-top:40px;text-align:center;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:16px}
+.footer b{color:#4f46e5}
+.validity{margin-top:16px;font-size:12px;color:#64748b;font-style:italic}
+@media print{body{padding:20px}}</style></head><body>
+<div class="header"><div><div class="logo">bot<span>mate</span></div><div class="tagline">Robots autónomos de servicio</div></div>
+<div class="quote-info"><div class="folio">${folio}</div><div>${today}</div><div>Vigencia: 15 días</div></div></div>
+<div class="section"><div class="section-title">Cliente</div><div class="client-box">
+<b>${selectedClient?.name || "—"}</b><br>${selectedClient?.company || "—"}<br>${selectedClient?.email || ""} ${selectedClient?.phone ? "· "+selectedClient.phone : ""}
+</div></div>
+<div class="section"><div class="section-title">Cotización — ${tipo === "renta" ? "Renta de Robot" : "Compra de Robot"}</div>
+<table><thead><tr><th>Concepto</th><th class="text-right">Cantidad</th><th class="text-right">Precio Unit.</th><th class="text-right">Total</th></tr></thead><tbody>
+${calc.desglose.map(d=>`<tr><td>${d.concepto}</td><td class="text-right">${calc.cantidad}</td><td class="text-right">${fmx(d.monto)}</td><td class="text-right">${fmx(d.monto*calc.cantidad)}</td></tr>`).join("")}
+</tbody></table></div>
+<div class="totals"><div class="totals-box">
+<div class="totals-row"><span>Subtotal</span><span>${fmx(calc.subtotal)}</span></div>
+${calc.descuento > 0 ? `<div class="totals-row desc"><span>Descuento (${calc.descuento}%)</span><span>-${fmx(calc.descuentoMonto)}</span></div>` : ""}
+<div class="totals-row"><span>IVA (16%)</span><span>${fmx(calc.iva)}</span></div>
+<div class="totals-row total"><span>TOTAL</span><span>${fmx(calc.total)}</span></div>
+</div></div>
+${mostrarPago !== "contado" ? `<div class="pago-section"><b>Opciones de pago:</b><br>
+${mostrarPago === "50_50" ? "50% al confirmar, 50% al entregar" : ""}
+${mostrarPago === "msi_3" ? `3 mensualidades de ${fmx(calc.total/3)} sin intereses` : ""}
+${mostrarPago === "msi_6" ? `6 mensualidades de ${fmx(calc.total/6)} sin intereses` : ""}
+${mostrarPago === "msi_12" ? `12 mensualidades de ${fmx(calc.total/12)} sin intereses` : ""}
+</div>` : ""}
+${notas ? `<div class="notes"><b>Notas:</b> ${notas}</div>` : ""}
+<div class="validity">* Precios en MXN. Cotización válida por 15 días a partir de la fecha de emisión. IVA incluido en el total.</div>
+<div class="footer"><b>BotMate</b> · ventas@botmate.mx · 56 4666 5718<br>CDMX · Guadalajara · Monterrey · Querétaro y +18 ciudades</div>
+</body></html>`;
+    const w = window.open("","_blank");
+    w.document.write(html);
+    w.document.close();
+    setTimeout(()=>w.print(), 500);
+  };
+
+  const sendByWhatsApp = async () => {
+    if (!selectedClient?.phone) return alert("El cliente no tiene teléfono registrado");
+    setSending(true);
+    const phone = selectedClient.phone.replace(/\D/g,"");
+    const fullPhone = phone.startsWith("52") ? phone : "52"+phone;
+    const msg = `Hola ${selectedClient.name}, te comparto tu cotización ${folio}:\n\n` +
+      calc.desglose.map(d=>`- ${d.concepto}: ${fmx(d.monto)}`).join("\n") +
+      (calc.descuento > 0 ? `\n\nDescuento ${calc.descuento}%: -${fmx(calc.descuentoMonto)}` : "") +
+      `\n\nSubtotal: ${fmx(calc.subtotalConDesc)}\nIVA: ${fmx(calc.iva)}\nTotal: ${fmx(calc.total)}` +
+      (notas ? `\n\nNotas: ${notas}` : "") +
+      `\n\nCotización válida por 15 días. Cualquier duda quedo a tus órdenes.`;
+    try {
+      const res = await fetch("https://njiwuuspfloschpeasol.supabase.co/functions/v1/whatsapp-webhook", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({_manual_send:true, phone:fullPhone, message:msg})
+      });
+      if(res.ok) setSentMsg("Cotización enviada por WhatsApp");
+      else setSentMsg("Error al enviar");
+    } catch(e) { setSentMsg("Error: "+e.message); }
+    setSending(false);
+    setTimeout(()=>setSentMsg(""),4000);
+  };
+
+  const sendByEmail = async () => {
+    if (!selectedClient?.email) return alert("El cliente no tiene correo registrado");
+    setSending(true);
+    setSentMsg("Funcionalidad de correo en configuración (requiere AWS SES)");
+    setSending(false);
+    setTimeout(()=>setSentMsg(""),4000);
+  };
+
+  const ciudades = Object.keys(LOGISTICS_PRICES).sort();
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <DollarSign className="text-white" size={24}/>
+          </div>
+          <div><h1 className="text-2xl font-bold text-gray-900">Cotizador</h1><p className="text-gray-500 text-sm">Genera cotizaciones profesionales al instante</p></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-6">
+        {/* Left: Configuration */}
+        <div className="col-span-2 space-y-4">
+          {/* Tipo */}
+          <div className="bg-white rounded-2xl shadow-sm border p-5">
+            <div className="text-sm font-bold text-gray-700 mb-3">Tipo de cotización</div>
+            <div className="flex gap-3">
+              {[{id:"renta",label:"Renta",desc:"Por día, semana o mes"},{id:"venta",label:"Venta",desc:"Compra del robot"}].map(t=>(
+                <button key={t.id} onClick={()=>setTipo(t.id)} className={`flex-1 p-4 rounded-xl border-2 text-left transition-all ${tipo===t.id?"border-indigo-500 bg-indigo-50":"border-gray-200 hover:border-gray-300"}`}>
+                  <div className={`font-bold ${tipo===t.id?"text-indigo-700":"text-gray-700"}`}>{t.label}</div>
+                  <div className="text-xs text-gray-500 mt-1">{t.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Robot + Ciudad + Cliente */}
+          <div className="bg-white rounded-2xl shadow-sm border p-5 space-y-4">
+            <div className="text-sm font-bold text-gray-700 mb-1">Configuración</div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Robot</label>
+                <select value={robot} onChange={e=>setRobot(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">
+                  {QUOTE_ROBOTS.map(r=><option key={r.id} value={r.id}>{r.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Ciudad</label>
+                <select value={ciudad} onChange={e=>setCiudad(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">
+                  {ciudades.map(c=><option key={c} value={c}>{c} — {fmx(LOGISTICS_PRICES[c])} logística</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Cliente</label>
+                <select value={clienteId} onChange={e=>setClienteId(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">
+                  <option value="">Seleccionar cliente...</option>
+                  {clients.map(c=><option key={c.id} value={c.id}>{c.name} — {c.company}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Cantidad de robots</label>
+                <input type="number" min={1} max={20} value={cantidad} onChange={e=>setCantidad(Math.max(1,+e.target.value))} className="w-full border rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Descuento (%)</label>
+                <input type="number" min={0} max={50} value={descuento} onChange={e=>setDescuento(Math.max(0,Math.min(50,+e.target.value)))} className="w-full border rounded-lg px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Opciones de pago</label>
+                <select value={mostrarPago} onChange={e=>setMostrarPago(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">
+                  <option value="contado">Pago de contado</option>
+                  <option value="50_50">50% / 50%</option>
+                  <option value="msi_3">3 meses sin intereses</option>
+                  <option value="msi_6">6 meses sin intereses</option>
+                  <option value="msi_12">12 meses sin intereses</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Renta options */}
+          {tipo === "renta" && (
+            <div className="bg-white rounded-2xl shadow-sm border p-5 space-y-4">
+              <div className="text-sm font-bold text-gray-700 mb-1">Periodo de renta</div>
+              <div className="grid grid-cols-4 gap-3">
+                {[{id:"dia",label:"Por día"},{id:"finde",label:"Fin de semana"},{id:"semana",label:"Semana"},{id:"mensual",label:"Mensual"}].map(p=>(
+                  <button key={p.id} onClick={()=>{setPeriodo(p.id);if(p.id==="dia")setDias(1);}} className={`p-3 rounded-xl border-2 text-center text-sm font-medium transition-all ${periodo===p.id?"border-indigo-500 bg-indigo-50 text-indigo-700":"border-gray-200 text-gray-600 hover:border-gray-300"}`}>{p.label}</button>
+                ))}
+              </div>
+              {periodo === "dia" && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 mb-1 block">Número de días</label>
+                  <input type="number" min={1} max={30} value={dias} onChange={e=>setDias(Math.max(1,+e.target.value))} className="w-32 border rounded-lg px-3 py-2 text-sm"/>
+                </div>
+              )}
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={incluirOperador} onChange={e=>setIncluirOperador(e.target.checked)} className="rounded"/>
+                  Operador BotMate ($1,100/día)
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={incluirBranding} onChange={e=>setIncluirBranding(e.target.checked)} className="rounded"/>
+                  Branding personalizado ($1,100)
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Venta options */}
+          {tipo === "venta" && (
+            <div className="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
+              <div className="text-sm font-bold text-gray-700 mb-1">Extras incluidos en la venta</div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  {label:"Instalación y configuración ($5,000)",state:incluirInstalacion,set:setIncluirInstalacion},
+                  {label:"Capacitación 2 días ($6,000)",state:incluirCapacitacion,set:setIncluirCapacitacion},
+                  {label:"Póliza de mantenimiento 1 año ($17,500)",state:incluirPoliza,set:setIncluirPoliza},
+                  {label:"Soporte técnico 12 meses ($54,000)",state:incluirSoporte,set:setIncluirSoporte},
+                ].map((x,i)=>(
+                  <label key={i} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={x.state} onChange={e=>x.set(e.target.checked)} className="rounded"/>{x.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Notas */}
+          <div className="bg-white rounded-2xl shadow-sm border p-5">
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Notas adicionales</label>
+            <textarea value={notas} onChange={e=>setNotas(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Condiciones especiales, observaciones..."/>
+          </div>
+        </div>
+
+        {/* Right: Preview + Actions */}
+        <div className="space-y-4">
+          {/* Preview card */}
+          <div className="bg-white rounded-2xl shadow-sm border p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm font-bold text-gray-700">Resumen</div>
+              <span className={`text-xs font-bold px-2 py-1 rounded-full ${tipo==="renta"?"bg-blue-100 text-blue-700":"bg-green-100 text-green-700"}`}>
+                {tipo === "renta" ? "RENTA" : "VENTA"}
+              </span>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              {calc.desglose.map((d,i) => (
+                <div key={i} className="flex justify-between py-1">
+                  <span className="text-gray-600 truncate mr-2">{d.concepto}</span>
+                  <span className="font-medium text-gray-900 whitespace-nowrap">{fmx(d.monto)}</span>
+                </div>
+              ))}
+            </div>
+
+            {cantidad > 1 && <div className="text-xs text-gray-500 mt-2 pt-2 border-t">x {cantidad} robot{cantidad>1?"s":""}</div>}
+
+            <div className="border-t mt-3 pt-3 space-y-1">
+              <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span>{fmx(calc.subtotal)}</span></div>
+              {descuento > 0 && <div className="flex justify-between text-sm text-green-600 font-medium"><span>Descuento {descuento}%</span><span>-{fmx(calc.descuentoMonto)}</span></div>}
+              <div className="flex justify-between text-sm"><span className="text-gray-500">IVA 16%</span><span>{fmx(calc.iva)}</span></div>
+              <div className="flex justify-between text-lg font-black text-indigo-600 pt-2 border-t mt-2"><span>TOTAL</span><span>{fmx(calc.total)}</span></div>
+            </div>
+
+            {mostrarPago !== "contado" && (
+              <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                {mostrarPago === "50_50" && "50% al confirmar, 50% al entregar"}
+                {mostrarPago === "msi_3" && `3 pagos de ${fmx(calc.total/3)}`}
+                {mostrarPago === "msi_6" && `6 pagos de ${fmx(calc.total/6)}`}
+                {mostrarPago === "msi_12" && `12 pagos de ${fmx(calc.total/12)}`}
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="space-y-2">
+            <button onClick={generatePDF} className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg">
+              <Download size={16}/> Descargar PDF
+            </button>
+            <button onClick={sendByWhatsApp} disabled={sending||!clienteId} className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-all disabled:opacity-40">
+              <MessageCircle size={16}/> Enviar por WhatsApp
+            </button>
+            <button onClick={sendByEmail} disabled={sending||!clienteId} className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all disabled:opacity-40">
+              <Mail size={16}/> Enviar por Correo
+            </button>
+          </div>
+
+          {sentMsg && <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 text-center font-medium">{sentMsg}</div>}
+
+          {/* Quick info */}
+          <div className="bg-gray-50 rounded-2xl border p-4 text-xs text-gray-500 space-y-1">
+            <div className="font-bold text-gray-700 mb-2">Info rápida</div>
+            <div>Logística {ciudad}: {fmx(logIda)} (sencillo)</div>
+            <div>{ciudad === "CDMX" || ciudad === "Guadalajara" ? "Robot disponible de inmediato" : "Requiere programar envío"}</div>
+            <div>Vigencia de cotización: 15 días</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── FACTURACIÓN VIEW ─────────────────────────────────────────────────────────
 function FacturacionView({ invoices, clients, onAdd, onUpdate, onDelete }) {
   const MESES = ["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
@@ -1931,6 +2326,7 @@ export default function SalesFlow() {
     {id:"email",      label:"Email Marketing",  icon:Mail,       group:"comms"},
     {id:"whatsapp",   label:"WhatsApp",          icon:MessageCircle,group:"comms"},
     {id:"conversations",label:"Conversaciones",  icon:Phone,        group:"comms"},
+    {id:"cotizador",  label:"Cotizador",          icon:DollarSign,  group:"ventas"},
     {id:"robots",     label:"Robots",            icon:Bot,        group:"ops"},
     {id:"facturacion",label:"Facturación",       icon:FileText,   group:"ops"},
   ];
@@ -1990,6 +2386,7 @@ export default function SalesFlow() {
         {view==="email"      &&<EmailView clients={clients}/>}
         {view==="whatsapp"   &&<WhatsAppView clients={clients}/>}
         {view==="conversations"&&<ConversationsView conversations={conversations} clients={clients} setConversations={setConversations} setClients={setClients}/>}
+        {view==="cotizador"  &&<CotizadorView clients={clients}/>}
         {view==="robots"     &&<RobotsView robots={robots} rentals={rentals} clients={clients} onAddRobot={addRobot} onEditRobot={editRobot} onDeleteRobot={deleteRobot} onAddRental={addRental} onUpdateRental={updateRental}/>}
         {view==="facturacion"&&<FacturacionView invoices={invoices} clients={clients} onAdd={addInvoice} onUpdate={updateInvoice} onDelete={deleteInvoice}/>}
       </div>
