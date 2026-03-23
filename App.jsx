@@ -1142,6 +1142,9 @@ function CotizadorView({ clients }) {
   const robotInfo = QUOTE_ROBOTS.find(r=>r.id===robot);
   const logIda = LOGISTICS_PRICES[ciudad] || 0;
 
+  // Precios mensuales fijos por robot
+  const RENTA_MENSUAL = { cc1: 25000, pudubot2: 25000 };
+
   // Calculate pricing
   const calcRenta = () => {
     let rentaDiaria = 1500;
@@ -1149,25 +1152,35 @@ function CotizadorView({ clients }) {
     let branding = incluirBranding ? 1100 : 0;
     let numDias = dias;
     let logistica = 0;
+    let rentaTotal = 0;
+    let operadorTotal = 0;
+    let esMensual = false;
 
     // LOGÍSTICA: solo se cobra IDA (1 vez) en todos los casos.
     // EXCEPCIÓN: fin de semana se cobra ida Y vuelta porque el robot se recoge.
     if (periodo === "dia") {
       numDias = dias;
       logistica = logIda; // solo ida — el robot se queda
+      rentaTotal = rentaDiaria * numDias;
+      operadorTotal = operador * numDias;
     } else if (periodo === "finde") {
       numDias = 3;
       logistica = logIda * 2; // ida + vuelta — se entrega viernes, se recoge domingo
+      rentaTotal = rentaDiaria * numDias;
+      operadorTotal = operador * numDias;
     } else if (periodo === "semana") {
       numDias = 7;
       logistica = logIda; // solo ida — el robot se queda
+      rentaTotal = rentaDiaria * numDias;
+      operadorTotal = operador * numDias;
     } else if (periodo === "mensual") {
       numDias = 30;
+      esMensual = true;
       logistica = logIda; // solo ida — el robot se queda
+      rentaTotal = RENTA_MENSUAL[robot] || 25000; // precio fijo mensual
+      operadorTotal = 0; // operador incluido en mensual
     }
 
-    const rentaTotal = rentaDiaria * numDias;
-    const operadorTotal = operador * numDias;
     const brandingTotal = branding; // branding es una sola vez
     const viaticos = periodo === "finde" ? 800 * 2 : 0;
 
@@ -1180,13 +1193,13 @@ function CotizadorView({ clients }) {
 
     return {
       desglose: [
-        {concepto:`Renta de robot (${numDias} día${numDias>1?"s":""})`, monto: rentaTotal},
-        ...(incluirOperador ? [{concepto:`Operador BotMate (${numDias} día${numDias>1?"s":""})`, monto: operadorTotal}] : []),
+        {concepto: esMensual ? `Renta mensual ${robotInfo?.label}` : `Renta de robot (${numDias} día${numDias>1?"s":""})`, monto: rentaTotal},
+        ...(!esMensual && incluirOperador ? [{concepto:`Operador BotMate (${numDias} día${numDias>1?"s":""})`, monto: operadorTotal}] : []),
         ...(incluirBranding ? [{concepto:"Branding personalizado", monto: brandingTotal}] : []),
         {concepto:`Logística ${ciudad} (${periodo==="finde"?"ida y vuelta":"solo ida"})`, monto: logistica},
         ...(viaticos > 0 ? [{concepto:"Viáticos fin de semana", monto: viaticos}] : []),
       ],
-      cantidad, subtotal, descuento, descuentoMonto, subtotalConDesc, iva, total, numDias
+      cantidad, subtotal, descuento, descuentoMonto, subtotalConDesc, iva, total, numDias, esMensual
     };
   };
 
@@ -1258,6 +1271,7 @@ ${mostrarPago === "msi_6" ? `6 mensualidades de ${fmx(calc.total/6)} sin interes
 ${mostrarPago === "msi_12" ? `12 mensualidades de ${fmx(calc.total/12)} sin intereses` : ""}
 </div>` : ""}
 ${notas ? `<div class="notes"><b>Notas:</b> ${notas}</div>` : ""}
+${calc.esMensual ? `<div class="notes"><b>Nota:</b> En contratos anuales se aplica un descuento especial. Consulta con tu asesor para conocer las condiciones.</div>` : ""}
 <div class="validity">* Precios en MXN. Cotización válida por 15 días a partir de la fecha de emisión. IVA incluido en el total.</div>
 <div class="footer"><b>BotMate</b> · ventas@botmate.mx · 56 4666 5718<br>CDMX · Guadalajara · Monterrey · Querétaro y +18 ciudades</div>
 </body></html>`;
@@ -1477,6 +1491,12 @@ ${notas ? `<div class="notes"><b>Notas:</b> ${notas}</div>` : ""}
                 {mostrarPago === "msi_3" && `3 pagos de ${fmx(calc.total/3)}`}
                 {mostrarPago === "msi_6" && `6 pagos de ${fmx(calc.total/6)}`}
                 {mostrarPago === "msi_12" && `12 pagos de ${fmx(calc.total/12)}`}
+              </div>
+            )}
+
+            {calc.esMensual && (
+              <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700">
+                En contratos anuales se aplica descuento especial. Consultar condiciones.
               </div>
             )}
           </div>
