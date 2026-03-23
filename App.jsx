@@ -1261,15 +1261,24 @@ ${notas ? `<div class="notes"><b>Notas:</b> ${notas}</div>` : ""}
 <div class="validity">* Precios en MXN. Cotización válida por 15 días a partir de la fecha de emisión. IVA incluido en el total.</div>
 <div class="footer"><b>BotMate</b> · ventas@botmate.mx · 56 4666 5718<br>CDMX · Guadalajara · Monterrey · Querétaro y +18 ciudades</div>
 </body></html>`;
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Cotizacion_${folio}_${selectedClient?.company?.replace(/\s+/g,"_") || "BotMate"}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    iframe.contentWindow.onafterprint = () => {
+      document.body.removeChild(iframe);
+    };
+    setTimeout(() => {
+      iframe.contentWindow.print();
+    }, 300);
   };
 
   const sendByWhatsApp = async () => {
