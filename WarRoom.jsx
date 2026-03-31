@@ -1973,7 +1973,7 @@ function SistemasTab() {
 
 // ─── COMMAND CENTER (CHAT) ───────────────────────────────────────────────────
 
-const AGENTS = [
+const CHAT_AGENTS = [
   { id: "all",       name: "Todo el Equipo",  role: "Todos los agentes juntos",         color: "#6366f1", icon: "⚡" },
   { id: "APOLO",     name: "APOLO",           role: "Prospección y leads fríos",         color: "#f59e0b", icon: "🎯" },
   { id: "NEXUS",     name: "NEXUS",           role: "Calificación y CRM",               color: "#06b6d4", icon: "🔗" },
@@ -1987,11 +1987,11 @@ const AGENTS = [
 ];
 
 function CommandCenterTab() {
-  const [selectedAgent, setSelectedAgent] = useState(AGENTS[0]);
+  const [selectedAgent, setSelectedAgent] = useState(CHAT_AGENTS[0]);
   const [messages, setMessages] = useState([
     {
       role: "agent",
-      agent: AGENTS[0],
+      agent: CHAT_AGENTS[0],
       text: "Sistemas en línea. Soy el equipo completo de BotMate AI. Tengo acceso al pipeline, robots, métricas y toda la operación. ¿Qué necesitas saber?",
       timestamp: new Date().toISOString(),
     }
@@ -2033,7 +2033,7 @@ function CommandCenterTab() {
       const data = await res.json();
       const responseText = data.response || "Sin respuesta del sistema.";
       const agentName = data.agent || selectedAgent.name;
-      const agentInfo = AGENTS.find(a => a.id === agentName) || selectedAgent;
+      const agentInfo = CHAT_AGENTS.find(a => a.id === agentName) || selectedAgent;
 
       setMessages(prev => [...prev, {
         role: "agent",
@@ -2103,7 +2103,7 @@ function CommandCenterTab() {
         </div>
 
         <div style={{ overflowY: "auto", flex: 1 }}>
-          {AGENTS.map(agent => {
+          {CHAT_AGENTS.map(agent => {
             const isActive = selectedAgent.id === agent.id;
             return (
               <div
