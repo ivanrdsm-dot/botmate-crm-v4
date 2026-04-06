@@ -16,7 +16,7 @@ function useLiveMetrics() {
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const fields = ["Workflow_State","Clasificacion","Temperatura","Score_IA","Name","Empresa","Agente_Actual","Emails_Enviados","WhatsApp_Enviados","Ultimo_Evento","Fecha_Seguimiento"];
+      const fields = ["Workflow_State","Clasificacion","Temperatura","Score_IA","Name","Empresa","Agente_Actual","Emails_Enviados","WhatsApp_Enviados","Ultimo_Evento","Fecha_Seguimiento","Email_Asunto","Email_Preview","Resend_Email_ID"];
       const qs = fields.map(f => `fields[]=${encodeURIComponent(f)}`).join("&");
       const res = await fetch(
         `https://api.airtable.com/v0/${AIRTABLE_BASE}/tblO571b5ojGbLHnX?maxRecords=200&${qs}`,
@@ -48,13 +48,14 @@ function useLiveMetrics() {
 
         // Recent activity — leads where HERMES or any agent has acted
         const recentActivity = records
-          .filter(r => r.fields.Ultimo_Evento && r.fields.Ultimo_Evento.includes("HERMES"))
+          .filter(r => r.fields.Workflow_State === "email_sent" || (r.fields.Ultimo_Evento && r.fields.Ultimo_Evento.includes("Ivan")))
           .slice(0, 15)
           .map(r => ({
             name: r.fields.Name || "?",
             empresa: r.fields.Empresa || "?",
             evento: r.fields.Ultimo_Evento || "",
-            agente: r.fields.Agente_Actual || "HERMES",
+            agente: r.fields.Agente_Actual || "Ivan Cadavieco",
+            asunto: r.fields.Email_Asunto || "",
             state: r.fields.Workflow_State || "email_sent",
           }));
 
@@ -1651,9 +1652,12 @@ function OverviewTab() {
                 <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", flexShrink: 0 }}>📧</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: "700", fontSize: "12px", color: "#0f172a" }}>{act.name} <span style={{ color: "#64748b", fontWeight: "400" }}>· {act.empresa}</span></div>
-                  <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{act.evento}</div>
+                  {act.asunto
+                    ? <div style={{ fontSize: "11px", color: "#1d4ed8", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📨 {act.asunto}</div>
+                    : <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{act.evento.replace("HERMES:","✉️ Ivan C.:").replace("✉️ Ivan C. →","✉️ Ivan C.:")}</div>
+                  }
                 </div>
-                <span style={{ ...STYLES.stepBadge("#16a34a"), fontSize: "10px", flexShrink: 0 }}>EMAIL SENT</span>
+                <span style={{ ...STYLES.stepBadge("#16a34a"), fontSize: "10px", flexShrink: 0 }}>✉️ ENVIADO</span>
               </div>
             ))}
           </div>
@@ -2861,7 +2865,7 @@ function useLeads() {
 
   const fetchLeads = useCallback(async () => {
     try {
-      const fields = ["Name","Empresa","Cargo","Sector","Email","Telefono","Score_IA","Clasificacion","Temperatura","Tipo_Negocio","Robot_Recomendado","Workflow_State","Cadencia_Estado","Cadencia_Dia","Fecha_Seguimiento","Es_VIP","Agente_Actual","Ultimo_Evento","WhatsApp_Enviados","Emails_Enviados"];
+      const fields = ["Name","Empresa","Cargo","Sector","Email","Telefono","Score_IA","Clasificacion","Temperatura","Tipo_Negocio","Robot_Recomendado","Workflow_State","Cadencia_Estado","Cadencia_Dia","Fecha_Seguimiento","Es_VIP","Agente_Actual","Ultimo_Evento","WhatsApp_Enviados","Emails_Enviados","Email_Asunto","Email_Preview","Resend_Email_ID"];
       const qs = fields.map(f=>`fields[]=${encodeURIComponent(f)}`).join("&");
       const res = await fetch(
         `https://api.airtable.com/v0/${AIRTABLE_BASE}/tblO571b5ojGbLHnX?maxRecords=200&${qs}`,
@@ -2962,9 +2966,29 @@ function LeadCard({ lead, onTrigger }) {
           {(f.Telefono || f["Teléfono"]) && <button onClick={() => onTrigger("wa", lead.id, f)} style={{ background: "#dcfce7", border: "1px solid #16a34a40", color: "#16a34a", borderRadius: "3px", padding: "2px 6px", fontSize: "10px", cursor: "pointer" }}>💬</button>}
         </div>
       </div>
+      {/* Last event / email sent info */}
       {f.Ultimo_Evento && (
-        <div style={{ marginTop: "5px", color: "#475569", fontSize: "10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {f.Ultimo_Evento.slice(0, 60)}
+        <div style={{ marginTop: "5px", color: f.Workflow_State === "email_sent" ? "#2563eb" : "#475569", fontSize: "10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {f.Ultimo_Evento.replace("HERMES:", "✉️ Ivan C.:").slice(0, 65)}
+        </div>
+      )}
+      {/* Email preview expandable */}
+      {f.Email_Asunto && (
+        <div style={{ marginTop: "4px", background: "#f0f7ff", borderRadius: "4px", padding: "4px 7px" }}>
+          <div style={{ fontSize: "10px", color: "#1d4ed8", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            📨 {f.Email_Asunto}
+          </div>
+          {f.Email_Preview && (
+            <div style={{ fontSize: "10px", color: "#475569", marginTop: "2px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+              {f.Email_Preview.slice(0, 120)}...
+            </div>
+          )}
+          {f.Resend_Email_ID && (
+            <a href={`https://resend.com/emails/${f.Resend_Email_ID}`} target="_blank" rel="noreferrer"
+               style={{ fontSize: "9px", color: "#6366f1", textDecoration: "none", marginTop: "2px", display: "block" }}>
+              Ver email completo en Resend ↗
+            </a>
+          )}
         </div>
       )}
     </div>
