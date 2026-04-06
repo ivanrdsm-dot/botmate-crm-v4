@@ -16,10 +16,72 @@ function useLiveMetrics() {
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const res = await fetch(METRICS_URL);
+      const fields = ["Workflow_State","Clasificacion","Temperatura","Score_IA","Name","Empresa","Agente_Actual","Emails_Enviados","WhatsApp_Enviados","Ultimo_Evento","Fecha_Seguimiento"];
+      const qs = fields.map(f => `fields[]=${encodeURIComponent(f)}`).join("&");
+      const res = await fetch(
+        `https://api.airtable.com/v0/${AIRTABLE_BASE}/tblO571b5ojGbLHnX?maxRecords=200&${qs}`,
+        { headers: { Authorization: `Bearer ${AIRTABLE_KEY}` } }
+      );
       if (res.ok) {
-        const json = await res.json();
-        setData(json);
+        const airtableData = await res.json();
+        const records = airtableData.records || [];
+        const total = records.length;
+
+        // Count by Workflow_State
+        const byState = {};
+        records.forEach(r => {
+          const s = r.fields.Workflow_State || "new";
+          byState[s] = (byState[s] || 0) + 1;
+        });
+
+        const emailSent = byState.email_sent || 0;
+        const waSent = byState.wa_sent || 0;
+        const replied = (byState.replied || 0) + (byState.wa_replied || 0);
+        const won = byState.won || 0;
+        const contacted = emailSent + waSent + replied + (byState.email_opened || 0) + (byState.proposal_sent || 0) + (byState.meeting_scheduled || 0) + won;
+
+        const scores = records.map(r => r.fields.Score_IA || 0).filter(s => s > 0);
+        const scorePromedio = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+
+        const hot = records.filter(r => ["HOT","hot"].includes(r.fields.Clasificacion || r.fields.Temperatura || "")).length;
+        const warm = records.filter(r => ["WARM","warm"].includes(r.fields.Clasificacion || r.fields.Temperatura || "")).length;
+
+        // Recent activity — leads where HERMES or any agent has acted
+        const recentActivity = records
+          .filter(r => r.fields.Ultimo_Evento && r.fields.Ultimo_Evento.includes("HERMES"))
+          .slice(0, 15)
+          .map(r => ({
+            name: r.fields.Name || "?",
+            empresa: r.fields.Empresa || "?",
+            evento: r.fields.Ultimo_Evento || "",
+            agente: r.fields.Agente_Actual || "HERMES",
+            state: r.fields.Workflow_State || "email_sent",
+          }));
+
+        setData({
+          leads: {
+            total,
+            scorePromedio,
+            contactados: contacted,
+            emailSent,
+            waSent,
+            replied,
+            won,
+            hot,
+            warm,
+            hoy: records.filter(r => {
+              const fs = r.fields.Fecha_Seguimiento;
+              if (!fs) return false;
+              const today = new Date().toISOString().split("T")[0];
+              return fs === today;
+            }).length,
+            pipeline: byState,
+          },
+          robots: { activos: 0, disponibles: 19, total: 19 },
+          revenue: { ingresosActuales: 0, potencialPerdido: Math.round(19 * 13000) },
+          workflows: { activos: 34, total: 34 },
+          recentActivity,
+        });
         setLastUpdated(new Date());
       }
     } catch (_) {}
@@ -28,7 +90,7 @@ function useLiveMetrics() {
 
   useEffect(() => {
     fetchMetrics();
-    const interval = setInterval(fetchMetrics, 60000);
+    const interval = setInterval(fetchMetrics, 30000);
     return () => clearInterval(interval);
   }, [fetchMetrics]);
 
@@ -1523,11 +1585,11 @@ function OverviewTab() {
       <div style={STYLES.sectionTitle}>📊 KPIs EN TIEMPO REAL</div>
       <div style={{ ...STYLES.grid3, gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
         {[
-          { label: "LEADS TOTALES", value: leadsTotal, sub: `${leadsHoy} hoy`, color: "#2563eb" },
-          { label: "ROBOTS ACTIVOS", value: `${robotsActivos}/${robots.total ?? 19}`, sub: `${robotsDisponibles} disponibles`, color: robotsActivos > 0 ? "#16a34a" : "#ef4444" },
-          { label: "REVENUE ACTUAL", value: ingresoActual > 0 ? `$${(ingresoActual/1000).toFixed(0)}K` : "$0", sub: "MXN/mes", color: ingresoActual > 0 ? "#16a34a" : "#ef4444" },
-          { label: "POTENCIAL", value: `$${Math.round(potencialPerdido / 1000)}K`, sub: "MXN/mes por capturar", color: "#f59e0b" },
-          { label: "WORKFLOWS n8n", value: `${wfs.activos ?? 8}`, sub: `${wfs.total ?? 8} activos`, color: "#16a34a" },
+          { label: "LEADS TOTALES", value: leadsTotal, sub: `${leads.hot ?? 0} HOT · ${leads.warm ?? 0} WARM`, color: "#2563eb" },
+          { label: "CONTACTADOS", value: leads.contactados ?? 0, sub: `${leads.emailSent ?? 0} email · ${leads.waSent ?? 0} WA`, color: "#16a34a" },
+          { label: "RESPONDIERON", value: leads.replied ?? 0, sub: "esperando respuesta", color: "#10b981" },
+          { label: "GANADOS", value: leads.won ?? 0, sub: "deals cerrados", color: "#f59e0b" },
+          { label: "WORKFLOWS n8n", value: `${wfs.activos ?? 34}`, sub: "activos en Railway", color: "#16a34a" },
           { label: "SCORE PROMEDIO", value: leads.scorePromedio ?? "—", sub: "IA de calificación", color: "#8b5cf6" },
         ].map((kpi, i) => (
           <div key={i} style={{ ...STYLES.card, borderTop: `2px solid ${kpi.color}` }}>
@@ -1539,18 +1601,31 @@ function OverviewTab() {
       </div>
 
       {/* PIPELINE FUNNEL */}
-      {Object.keys(pipeline).length > 0 && (
+      {leadsTotal > 0 && (
         <>
-          <div style={STYLES.sectionTitle}>🔻 PIPELINE POR ETAPA</div>
+          <div style={STYLES.sectionTitle}>🔻 PIPELINE — ESTADO ACTUAL</div>
           <div style={STYLES.card}>
-            {Object.entries(pipeline).map(([etapa, count]) => {
+            {[
+              { id: "email_sent", label: "📧 Email Enviado", color: "#2563eb" },
+              { id: "email_queued", label: "📬 Email en Cola", color: "#f59e0b" },
+              { id: "wa_sent", label: "💬 WhatsApp Enviado", color: "#16a34a" },
+              { id: "wa_queued", label: "📱 WA en Cola", color: "#f59e0b" },
+              { id: "replied", label: "✅ Respondió", color: "#10b981" },
+              { id: "wa_replied", label: "✅ Respondió WA", color: "#10b981" },
+              { id: "proposal_sent", label: "📋 Propuesta", color: "#8b5cf6" },
+              { id: "meeting_scheduled", label: "📅 Demo Agendada", color: "#a855f7" },
+              { id: "won", label: "🏆 Ganado", color: "#16a34a" },
+              { id: "new", label: "📥 Nuevos", color: "#64748b" },
+              { id: "scoring", label: "🧠 Calificando", color: "#6366f1" },
+              { id: "paused", label: "⏸ En Pausa", color: "#475569" },
+            ].filter(s => (pipeline[s.id] || 0) > 0).map(({ id, label, color }) => {
+              const count = pipeline[id] || 0;
               const pct = Math.round((count / leadsTotal) * 100) || 1;
-              const color = PIPELINE_COLORS[etapa] || "#64748b";
               return (
-                <div key={etapa} style={{ marginBottom: "10px" }}>
+                <div key={id} style={{ marginBottom: "10px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
-                    <span style={{ color: "#94a3b8", fontSize: "12px" }}>{etapa}</span>
-                    <span style={{ color, fontWeight: "700", fontSize: "12px" }}>{count} leads</span>
+                    <span style={{ color: "#475569", fontSize: "12px" }}>{label}</span>
+                    <span style={{ color, fontWeight: "700", fontSize: "12px" }}>{count} leads · {pct}%</span>
                   </div>
                   <div style={STYLES.progressBarOuter}>
                     <div style={STYLES.progressBarInner(pct, color)} />
@@ -1558,6 +1633,29 @@ function OverviewTab() {
                 </div>
               );
             })}
+          </div>
+        </>
+      )}
+
+      {/* RECENT ACTIVITY FEED */}
+      {m.recentActivity && m.recentActivity.length > 0 && (
+        <>
+          <div style={STYLES.sectionTitle}>⚡ ACTIVIDAD RECIENTE DE AGENTES</div>
+          <div style={{ ...STYLES.card, padding: "0" }}>
+            {m.recentActivity.map((act, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: "12px",
+                padding: "10px 14px",
+                borderBottom: i < m.recentActivity.length - 1 ? "1px solid #f1f5f9" : "none",
+              }}>
+                <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", flexShrink: 0 }}>📧</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: "700", fontSize: "12px", color: "#0f172a" }}>{act.name} <span style={{ color: "#64748b", fontWeight: "400" }}>· {act.empresa}</span></div>
+                  <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{act.evento}</div>
+                </div>
+                <span style={{ ...STYLES.stepBadge("#16a34a"), fontSize: "10px", flexShrink: 0 }}>EMAIL SENT</span>
+              </div>
+            ))}
           </div>
         </>
       )}
