@@ -3,6 +3,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const METRICS_URL = "https://primary-production-c732.up.railway.app/webhook/botmate-metrics";
 const N8N_BASE = "https://primary-production-c732.up.railway.app";
 const WAR_ROOM_CHAT_URL = "https://primary-production-c732.up.railway.app/webhook/warroom-chat";
+const CONTENT_STUDIO_URL = "https://primary-production-c732.up.railway.app/webhook/nexus-content-studio";
+const AIRTABLE_KEY = import.meta.env.VITE_AIRTABLE_KEY || "";
+const AIRTABLE_BASE = "appdBxw9JhiHU9FXI";
+const ZEUS_WEBHOOK = "https://primary-production-c732.up.railway.app/webhook/nexus-whatsapp-outreach";
+const HERMES_WEBHOOK = "https://primary-production-c732.up.railway.app/webhook/nexus-email-outreach";
 
 function useLiveMetrics() {
   const [data, setData] = useState(null);
@@ -1971,6 +1976,332 @@ function SistemasTab() {
   );
 }
 
+// ─── AGENT MONITOR (LIVE STATUS) ─────────────────────────────────────────────
+
+const MONITOR_URL = "https://primary-production-c732.up.railway.app/webhook/agent-monitor";
+const RUN_NOW_URL = "https://primary-production-c732.up.railway.app/webhook/nexus-run-agent";
+
+// Map workflow names to agent identities
+const WF_META = {
+  "01 Prospección":   { agent: "APOLO",   icon: "🎯", color: "#f59e0b", layer: "CAPTACION" },
+  "09 Apollo":        { agent: "APOLO",   icon: "🎯", color: "#f59e0b", layer: "CAPTACION" },
+  "NEXUS Orchestrat": { agent: "NEXUS",   icon: "🧠", color: "#06b6d4", layer: "CEREBRO" },
+  "NEXUS-CALIFICAR":  { agent: "NEXUS",   icon: "🧠", color: "#06b6d4", layer: "CEREBRO" },
+  "NEXUS-AGENT-MONI": { agent: "NEXUS",   icon: "🧠", color: "#06b6d4", layer: "CEREBRO" },
+  "NEXUS-TELEGRAM":   { agent: "NEXUS",   icon: "🧠", color: "#06b6d4", layer: "CEREBRO" },
+  "NEXUS-EMAIL":      { agent: "HERMES",  icon: "📧", color: "#10b981", layer: "CONTACTO" },
+  "NEXUS-MERCURY":    { agent: "MERCURY", icon: "💬", color: "#f97316", layer: "CONTACTO" },
+  "03 WhatsApp":      { agent: "MERCURY", icon: "💬", color: "#f97316", layer: "CONTACTO" },
+  "10 WhatsApp":      { agent: "MERCURY", icon: "💬", color: "#f97316", layer: "CONTACTO" },
+  "19 Cotización":    { agent: "MERCURY", icon: "💬", color: "#f97316", layer: "CONTACTO" },
+  "NEXUS-PROPUESTA":  { agent: "SIGMA",   icon: "📝", color: "#8b5cf6", layer: "CIERRE" },
+  "04 Cotización":    { agent: "SIGMA",   icon: "📝", color: "#8b5cf6", layer: "CIERRE" },
+  "12 Confirmación":  { agent: "SIGMA",   icon: "📝", color: "#8b5cf6", layer: "CIERRE" },
+  "07 TRACKER":       { agent: "TRACKER", icon: "📡", color: "#ef4444", layer: "SEGUIMIENTO" },
+  "13 Nutrición":     { agent: "TRACKER", icon: "📡", color: "#ef4444", layer: "SEGUIMIENTO" },
+  "NEXUS-RESCATE":    { agent: "TRACKER", icon: "📡", color: "#ef4444", layer: "SEGUIMIENTO" },
+  "06 Reporte":       { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
+  "15 Reporte":       { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
+  "18 Resumen":       { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
+  "08 Monitor":       { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
+  "17 Alerta":        { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
+  "METRICS API":      { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
+  "21 Score":         { agent: "ORACLE",  icon: "🔮", color: "#a855f7", layer: "INTELIGENCIA" },
+  "22 Monitor Robots":{ agent: "ONYX",    icon: "⚙️", color: "#64748b", layer: "OPERACIONES" },
+  "14 Onboarding":    { agent: "ONYX",    icon: "⚙️", color: "#64748b", layer: "OPERACIONES" },
+  "05 Generación":    { agent: "CONTENT", icon: "🎬", color: "#ec4899", layer: "MARKETING" },
+  "WAR ROOM":         { agent: "NEXUS",   icon: "🧠", color: "#06b6d4", layer: "CEREBRO" },
+};
+
+function getWfMeta(name) {
+  for (const [key, val] of Object.entries(WF_META)) {
+    if (name.includes(key)) return val;
+  }
+  return { agent: "OTHER", icon: "⚡", color: "#475569", layer: "OTROS" };
+}
+
+function timeAgo(iso) {
+  if (!iso) return "nunca";
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60) return "hace " + Math.round(diff) + "s";
+  if (diff < 3600) return "hace " + Math.round(diff / 60) + "m";
+  if (diff < 86400) return "hace " + Math.round(diff / 3600) + "h";
+  return "hace " + Math.round(diff / 86400) + "d";
+}
+
+function AgentMonitorTab() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const [runningAgents, setRunningAgents] = useState(new Set());
+  const [filter, setFilter] = useState("all");
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch(MONITOR_URL);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+        setLastUpdate(new Date());
+      }
+    } catch (_) {}
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 30000);
+    return () => clearInterval(interval);
+  }, [fetchStatus]);
+
+  const triggerAgent = async (agentName, wfId) => {
+    setRunningAgents(prev => new Set([...prev, wfId]));
+    try {
+      await fetch(RUN_NOW_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: agentName, workflow_id: wfId }),
+      });
+      setTimeout(() => {
+        fetchStatus();
+        setRunningAgents(prev => { const s = new Set(prev); s.delete(wfId); return s; });
+      }, 3000);
+    } catch (_) {
+      setRunningAgents(prev => { const s = new Set(prev); s.delete(wfId); return s; });
+    }
+  };
+
+  if (loading) return (
+    <div style={{ textAlign: "center", padding: "60px", color: "#475569" }}>
+      Cargando estado del sistema...
+    </div>
+  );
+
+  const agents = data?.agents || [];
+  const summary = data?.summary || {};
+
+  const LAYERS = ["CEREBRO", "CAPTACION", "CONTACTO", "CIERRE", "SEGUIMIENTO", "REPORTES", "INTELIGENCIA", "OPERACIONES", "MARKETING", "OTROS"];
+  const LAYER_COLORS = {
+    CEREBRO: "#06b6d4", CAPTACION: "#f59e0b", CONTACTO: "#f97316",
+    CIERRE: "#8b5cf6", SEGUIMIENTO: "#ef4444", REPORTES: "#3b82f6",
+    INTELIGENCIA: "#a855f7", OPERACIONES: "#64748b", MARKETING: "#ec4899", OTROS: "#475569",
+  };
+
+  const filtered = filter === "all" ? agents
+    : filter === "never" ? agents.filter(a => a.lastStatus === "never")
+    : filter === "error" ? agents.filter(a => a.lastStatus === "error")
+    : agents.filter(a => a.lastStatus === "success");
+
+  const grouped = {};
+  for (const a of filtered) {
+    const meta = getWfMeta(a.name);
+    const layer = meta.layer;
+    if (!grouped[layer]) grouped[layer] = [];
+    grouped[layer].push({ ...a, meta });
+  }
+
+  const statusColor = (s) => s === "success" ? "#22c55e" : s === "error" ? "#ef4444" : s === "never" ? "#f59e0b" : "#475569";
+  const statusLabel = (s) => s === "success" ? "OK" : s === "error" ? "ERROR" : s === "never" ? "PENDIENTE" : "?";
+
+  return (
+    <div>
+      {/* Summary Bar */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "12px", marginBottom: "20px" }}>
+        {[
+          { label: "TOTAL WORKFLOWS", value: summary.total || 0, color: "#3b82f6" },
+          { label: "ACTIVOS", value: summary.active || 0, color: "#22c55e" },
+          { label: "SALUDABLES", value: summary.healthy || 0, color: "#22c55e" },
+          { label: "CON ERRORES", value: summary.withErrors || 0, color: "#ef4444" },
+          { label: "PENDIENTES", value: summary.neverRun || 0, color: "#f59e0b" },
+        ].map(s => (
+          <div key={s.label} style={{ ...STYLES.card, textAlign: "center", borderTop: "2px solid " + s.color }}>
+            <div style={{ fontSize: "28px", fontWeight: "700", color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: "10px", color: "#475569", letterSpacing: "1px", marginTop: "4px" }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* NEXUS Orchestra Diagram */}
+      <div style={{ ...STYLES.card, marginBottom: "20px", borderTop: "2px solid #06b6d4" }}>
+        <div style={{ fontSize: "11px", color: "#06b6d4", letterSpacing: "1.5px", fontWeight: "700", marginBottom: "16px" }}>
+          NEXUS ORCHESTRA — FLUJO DE COMUNICACION ENTRE AGENTES
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", flexWrap: "wrap", padding: "8px 0" }}>
+          {[
+            { name: "APOLO", icon: "🎯", color: "#f59e0b", desc: "Prospecta" },
+            { arrow: "→" },
+            { name: "NEXUS", icon: "🧠", color: "#06b6d4", desc: "Orquesta" },
+            { arrow: "→" },
+            { name: "CALIFICAR", icon: "⭐", color: "#06b6d4", desc: "Puntúa" },
+            { arrow: "→" },
+            { name: "NEXUS", icon: "🧠", color: "#06b6d4", desc: "Decide" },
+          ].map((item, i) => item.arrow ? (
+            <div key={i} style={{ color: "#334155", fontSize: "20px", margin: "0 4px" }}>{item.arrow}</div>
+          ) : (
+            <div key={i} style={{
+              background: "#0f172a", border: "1px solid " + item.color + "40",
+              borderRadius: "8px", padding: "8px 14px", textAlign: "center", minWidth: "80px"
+            }}>
+              <div style={{ fontSize: "18px" }}>{item.icon}</div>
+              <div style={{ color: item.color, fontSize: "10px", fontWeight: "700" }}>{item.name}</div>
+              <div style={{ color: "#475569", fontSize: "9px" }}>{item.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", flexWrap: "wrap", padding: "8px 0" }}>
+          <div style={{ color: "#334155", fontSize: "11px", marginRight: "8px" }}>Score ≥80 →</div>
+          {[
+            { name: "MERCURY", icon: "💬", color: "#f97316", desc: "WhatsApp" },
+            { arrow: "→" },
+            { name: "TRACKER", icon: "📡", color: "#ef4444", desc: "Follow-up" },
+            { arrow: "→" },
+            { name: "SIGMA", icon: "📝", color: "#8b5cf6", desc: "Propuesta" },
+            { arrow: "→" },
+            { name: "ATLAS", icon: "📊", color: "#3b82f6", desc: "Reporta" },
+          ].map((item, i) => item.arrow ? (
+            <div key={i} style={{ color: "#334155", fontSize: "20px" }}>{item.arrow}</div>
+          ) : (
+            <div key={i} style={{
+              background: "#0f172a", border: "1px solid " + item.color + "40",
+              borderRadius: "8px", padding: "8px 14px", textAlign: "center", minWidth: "80px"
+            }}>
+              <div style={{ fontSize: "18px" }}>{item.icon}</div>
+              <div style={{ color: item.color, fontSize: "10px", fontWeight: "700" }}>{item.name}</div>
+              <div style={{ color: "#475569", fontSize: "9px" }}>{item.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", flexWrap: "wrap", padding: "4px 0" }}>
+          <div style={{ color: "#334155", fontSize: "11px", marginRight: "8px" }}>Score 50-79 →</div>
+          {[
+            { name: "HERMES", icon: "📧", color: "#10b981", desc: "Email frío" },
+            { arrow: "→" },
+            { name: "TRACKER", icon: "📡", color: "#ef4444", desc: "Monitorea" },
+          ].map((item, i) => item.arrow ? (
+            <div key={i} style={{ color: "#334155", fontSize: "20px" }}>{item.arrow}</div>
+          ) : (
+            <div key={i} style={{
+              background: "#0f172a", border: "1px solid " + item.color + "40",
+              borderRadius: "8px", padding: "8px 14px", textAlign: "center", minWidth: "80px"
+            }}>
+              <div style={{ fontSize: "18px" }}>{item.icon}</div>
+              <div style={{ color: item.color, fontSize: "10px", fontWeight: "700" }}>{item.name}</div>
+              <div style={{ color: "#475569", fontSize: "9px" }}>{item.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: "12px", padding: "8px 12px", background: "#0f172a", borderRadius: "6px", display: "flex", gap: "20px", flexWrap: "wrap" }}>
+          <span style={{ color: "#475569", fontSize: "10px" }}>🔒 AUTORIZACIÓN HUMANA REQUERIDA:</span>
+          <span style={{ color: "#f59e0b", fontSize: "10px" }}>Propuestas &gt;$150k MXN</span>
+          <span style={{ color: "#f59e0b", fontSize: "10px" }}>Deal ganado</span>
+          <span style={{ color: "#f59e0b", fontSize: "10px" }}>Meeting confirmado</span>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+        {[
+          { id: "all", label: "Todos (" + agents.length + ")" },
+          { id: "success", label: "✓ Saludables (" + agents.filter(a => a.lastStatus === "success").length + ")" },
+          { id: "never", label: "⚡ Pendientes (" + agents.filter(a => a.lastStatus === "never").length + ")" },
+          { id: "error", label: "✗ Errores (" + agents.filter(a => a.lastStatus === "error").length + ")" },
+        ].map(f => (
+          <button key={f.id} onClick={() => setFilter(f.id)} style={{
+            background: filter === f.id ? "#1e3a5f" : "transparent",
+            border: "1px solid " + (filter === f.id ? "#3b82f6" : "#1e3a5f"),
+            color: filter === f.id ? "#3b82f6" : "#475569",
+            padding: "6px 14px", borderRadius: "6px", cursor: "pointer",
+            fontSize: "11px", letterSpacing: "0.5px",
+          }}>{f.label}</button>
+        ))}
+        <div style={{ marginLeft: "auto", color: "#334155", fontSize: "10px", paddingTop: "8px" }}>
+          {lastUpdate ? "Actualizado " + timeAgo(lastUpdate.toISOString()) : "Cargando..."}
+          <button onClick={fetchStatus} style={{
+            marginLeft: "8px", background: "transparent", border: "1px solid #1e3a5f",
+            color: "#475569", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "10px"
+          }}>↺ Refresh</button>
+        </div>
+      </div>
+
+      {/* Workflow Cards by Layer */}
+      {LAYERS.filter(layer => grouped[layer]?.length > 0).map(layer => (
+        <div key={layer} style={{ marginBottom: "20px" }}>
+          <div style={{
+            fontSize: "10px", letterSpacing: "2px", color: LAYER_COLORS[layer] || "#475569",
+            fontWeight: "700", marginBottom: "10px", display: "flex", alignItems: "center", gap: "8px"
+          }}>
+            <span style={{ display: "inline-block", width: "30px", height: "1px", background: LAYER_COLORS[layer] }}></span>
+            {layer}
+            <span style={{ display: "inline-block", flex: 1, height: "1px", background: "#0f172a" }}></span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "10px" }}>
+            {grouped[layer].map(wf => {
+              const sColor = statusColor(wf.lastStatus);
+              const isRunning = runningAgents.has(wf.id);
+              return (
+                <div key={wf.id} style={{
+                  background: "#0f172a",
+                  border: "1px solid " + sColor + "30",
+                  borderLeft: "3px solid " + sColor,
+                  borderRadius: "6px",
+                  padding: "12px 14px",
+                  position: "relative",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                        <span style={{ fontSize: "14px" }}>{wf.meta.icon}</span>
+                        <span style={{
+                          fontSize: "10px", fontWeight: "700",
+                          color: wf.meta.color, letterSpacing: "0.5px"
+                        }}>{wf.meta.agent}</span>
+                        <span style={{
+                          fontSize: "9px", background: sColor + "20", color: sColor,
+                          border: "1px solid " + sColor + "60", borderRadius: "3px",
+                          padding: "1px 5px", letterSpacing: "0.5px"
+                        }}>{statusLabel(wf.lastStatus)}</span>
+                      </div>
+                      <div style={{ color: "#94a3b8", fontSize: "11px", marginBottom: "6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {wf.name.replace("BotMate — ", "")}
+                      </div>
+                      <div style={{ display: "flex", gap: "12px" }}>
+                        <span style={{ color: "#334155", fontSize: "10px" }}>
+                          {wf.lastRun ? timeAgo(wf.lastRun) : "Nunca ejecutado"}
+                        </span>
+                        {wf.totalRuns > 0 && (
+                          <span style={{ color: "#22c55e40", fontSize: "10px" }}>
+                            {wf.successCount}✓ {wf.errorCount > 0 ? wf.errorCount + "✗" : ""}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {isRunning ? (
+                      <div style={{ color: "#f59e0b", fontSize: "11px", padding: "4px 8px" }}>⟳</div>
+                    ) : (
+                      <button
+                        onClick={() => triggerAgent(wf.meta.agent, wf.id)}
+                        title="Ejecutar ahora"
+                        style={{
+                          background: "transparent", border: "1px solid #1e3a5f",
+                          color: "#475569", padding: "4px 8px", borderRadius: "4px",
+                          cursor: "pointer", fontSize: "11px",
+                          transition: "all 0.2s", flexShrink: 0,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = wf.meta.color; e.currentTarget.style.color = wf.meta.color; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "#1e3a5f"; e.currentTarget.style.color = "#475569"; }}
+                      >▶</button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── COMMAND CENTER (CHAT) ───────────────────────────────────────────────────
 
 const CHAT_AGENTS = [
@@ -2176,9 +2507,13 @@ function CommandCenterTab() {
           </div>
           {[
             "¿Cuántos leads activos?",
-            "¿Robots disponibles?",
-            "¿Pipeline esta semana?",
             "Dame el reporte del día",
+            "busca leads nuevos en restaurantes",
+            "¿Pipeline esta semana?",
+            "genera video script robots",
+            "crea calendario editorial",
+            "genera manual de ventas",
+            "secuencia emails hoteles",
           ].map((q, i) => (
             <div
               key={i}
@@ -2419,31 +2754,569 @@ function CommandCenterTab() {
   );
 }
 
+// ─── AIRTABLE HOOKS ──────────────────────────────────────────────────────────
+
+function useLeads() {
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLeads = useCallback(async () => {
+    try {
+      const fields = ["Name","Empresa","Cargo","Sector","Email","Telefono","Score_IA","Clasificacion","Temperatura","Tipo_Negocio","Robot_Recomendado","Workflow_State","Cadencia_Estado","Cadencia_Dia","Fecha_Seguimiento","Ultimo_Contacto","Es_VIP","Agente_Actual","Ultimo_Evento","WhatsApp_Enviados","Emails_Enviados"];
+      const qs = fields.map(f=>`fields[]=${encodeURIComponent(f)}`).join("&");
+      const res = await fetch(
+        `https://api.airtable.com/v0/${AIRTABLE_BASE}/tblO571b5ojGbLHnX?maxRecords=200&${qs}`,
+        { headers: { Authorization: `Bearer ${AIRTABLE_KEY}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setLeads(data.records || []);
+      }
+    } catch (_) {}
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchLeads();
+    const t = setInterval(fetchLeads, 30000);
+    return () => clearInterval(t);
+  }, [fetchLeads]);
+
+  return { leads, loading, refresh: fetchLeads };
+}
+
+function useClientes() {
+  const [clientes, setClientes] = useState([]);
+  useEffect(() => {
+    fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/tblPJgobJiZyY2zvh?maxRecords=50`,
+      { headers: { Authorization: `Bearer ${AIRTABLE_KEY}` } })
+      .then(r => r.json()).then(d => setClientes(d.records || [])).catch(() => {});
+  }, []);
+  return clientes;
+}
+
+// ─── PIPELINE TAB ────────────────────────────────────────────────────────────
+
+const PIPELINE_STAGES = [
+  { id: "new",            label: "Nuevos",         color: "#64748b", icon: "📥" },
+  { id: "scoring",        label: "Calificando",     color: "#6366f1", icon: "🧠" },
+  { id: "wa_queued",      label: "WA Programado",   color: "#f59e0b", icon: "📱" },
+  { id: "email_queued",   label: "Email Programado",color: "#f59e0b", icon: "📧" },
+  { id: "wa_sent",        label: "Contactado",      color: "#3b82f6", icon: "✉️" },
+  { id: "email_sent",     label: "Email Enviado",   color: "#3b82f6", icon: "📨" },
+  { id: "replied",        label: "Respondió",       color: "#10b981", icon: "💬" },
+  { id: "wa_replied",     label: "Respondió WA",    color: "#10b981", icon: "💬" },
+  { id: "email_opened",   label: "Abrió Email",     color: "#06b6d4", icon: "👁" },
+  { id: "proposal_sent",  label: "Propuesta",       color: "#8b5cf6", icon: "📋" },
+  { id: "meeting_scheduled","label":"Demo Agendada",color: "#a855f7", icon: "📅" },
+  { id: "won",            label: "Ganados",         color: "#22c55e", icon: "🏆" },
+  { id: "paused",         label: "En Pausa",        color: "#475569", icon: "⏸" },
+  { id: "rescate",        label: "Rescate",         color: "#f97316", icon: "🚨" },
+];
+
+const TEMP_COLORS = { hot: "#ef4444", warm: "#f59e0b", cold: "#3b82f6", HOT: "#ef4444", WARM: "#f59e0b", COLD: "#3b82f6" };
+const TEMP_LABELS = { hot: "🔴 HOT", warm: "🟡 WARM", cold: "🔵 COLD", HOT: "🔴 HOT", WARM: "🟡 WARM", COLD: "🔵 COLD" };
+
+function LeadCard({ lead, onTrigger }) {
+  const f = lead.fields || {};
+  const temp = f.Clasificacion || f.Temperatura || "cold";
+  const color = TEMP_COLORS[temp] || "#64748b";
+  const robot = (f.Robot_Recomendado || "").replace("PuduBot 2 ", "PuduBot ").replace(" Limpieza","").replace(" Delivery","");
+  const diasSinContacto = f.Ultimo_Contacto
+    ? Math.floor((Date.now() - new Date(f.Ultimo_Contacto)) / 86400000) : null;
+  const urgente = diasSinContacto > 7;
+
+  return (
+    <div style={{
+      background: "#0f172a",
+      border: `1px solid ${urgente ? "#ef4444" : color + "40"}`,
+      borderLeft: `3px solid ${color}`,
+      borderRadius: "6px",
+      padding: "10px",
+      marginBottom: "8px",
+      fontSize: "12px",
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: "700", color: "#e2e8f0", fontSize: "13px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {f.Empresa || f.Name || "—"}
+            {f.Es_VIP && <span style={{ marginLeft: "4px", color: "#f59e0b", fontSize: "11px" }}>★VIP</span>}
+          </div>
+          <div style={{ color: "#64748b", fontSize: "11px" }}>
+            {(f.Name||"").split(" ")[0]}{f.Cargo ? ` · ${f.Cargo.slice(0,20)}` : ""}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px", marginLeft: "8px" }}>
+          <span style={{ background: color+"20", color, border: `1px solid ${color}40`, borderRadius: "4px", padding: "1px 5px", fontSize: "10px", fontWeight: "700" }}>
+            {f.Score_IA || "—"}
+          </span>
+          {urgente && <span style={{ color: "#ef4444", fontSize: "10px" }}>⚠ {diasSinContacto}d</span>}
+        </div>
+      </div>
+      <div style={{ marginTop: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+          {robot && <span style={{ background: "#1e293b", color: "#94a3b8", borderRadius: "3px", padding: "1px 5px", fontSize: "10px" }}>{robot}</span>}
+          {f.Tipo_Negocio && <span style={{ background: "#1e3a5f", color: "#60a5fa", borderRadius: "3px", padding: "1px 5px", fontSize: "10px" }}>{f.Tipo_Negocio.replace("A-","").replace("B-","")}</span>}
+        </div>
+        <div style={{ display: "flex", gap: "4px" }}>
+          {f.Email && <button onClick={() => onTrigger("email", lead.id, f)} style={{ background: "#10b98120", border: "1px solid #10b98140", color: "#34d399", borderRadius: "3px", padding: "2px 6px", fontSize: "10px", cursor: "pointer" }}>📧</button>}
+          {(f.Telefono || f["Teléfono"]) && <button onClick={() => onTrigger("wa", lead.id, f)} style={{ background: "#22c55e20", border: "1px solid #22c55e40", color: "#4ade80", borderRadius: "3px", padding: "2px 6px", fontSize: "10px", cursor: "pointer" }}>💬</button>}
+        </div>
+      </div>
+      {f.Ultimo_Evento && (
+        <div style={{ marginTop: "5px", color: "#475569", fontSize: "10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {f.Ultimo_Evento.slice(0, 60)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PipelineTab() {
+  const { leads, loading, refresh } = useLeads();
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [triggering, setTriggering] = useState(null);
+  const [view, setView] = useState("kanban"); // kanban | table | funnel
+
+  const filtered = leads.filter(l => {
+    const f = l.fields || {};
+    const temp = (f.Clasificacion || f.Temperatura || "").toLowerCase();
+    if (filter === "hot" && temp !== "hot") return false;
+    if (filter === "warm" && temp !== "warm") return false;
+    if (filter === "cold" && temp !== "cold") return false;
+    if (filter === "vip" && !f.Es_VIP) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      return (f.Empresa||"").toLowerCase().includes(s) || (f.Name||"").toLowerCase().includes(s);
+    }
+    return true;
+  });
+
+  const byStage = {};
+  PIPELINE_STAGES.forEach(s => { byStage[s.id] = []; });
+  filtered.forEach(l => {
+    const state = l.fields?.Workflow_State || "new";
+    if (!byStage[state]) byStage[state] = [];
+    byStage[state].push(l);
+  });
+
+  const totalHot = leads.filter(l => (l.fields?.Clasificacion||l.fields?.Temperatura||"").toLowerCase() === "hot").length;
+  const totalWarm = leads.filter(l => (l.fields?.Clasificacion||l.fields?.Temperatura||"").toLowerCase() === "warm").length;
+  const totalWon = leads.filter(l => l.fields?.Workflow_State === "won").length;
+  const today = new Date().toISOString().split("T")[0];
+  const followupHoy = leads.filter(l => l.fields?.Fecha_Seguimiento === today).length;
+  const atascados = leads.filter(l => {
+    const lc = l.fields?.Ultimo_Contacto;
+    if (!lc) return false;
+    const d = (Date.now() - new Date(lc)) / 86400000;
+    return d > 7 && !["won","lost","paused","rescate"].includes(l.fields?.Workflow_State || "");
+  }).length;
+
+  async function triggerAgent(type, leadId, fields) {
+    setTriggering(leadId + type);
+    try {
+      const url = type === "wa" ? ZEUS_WEBHOOK : HERMES_WEBHOOK;
+      await fetch(url, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_id: leadId, score: fields.Score_IA || 50, robot: fields.Robot_Recomendado || "" })
+      });
+      setTimeout(refresh, 3000);
+    } catch (_) {}
+    setTriggering(null);
+  }
+
+  const stagesWithLeads = PIPELINE_STAGES.filter(s => (byStage[s.id]||[]).length > 0 || ["new","wa_queued","replied","proposal_sent","won"].includes(s.id));
+
+  return (
+    <div style={{ padding: "20px", height: "calc(100vh - 120px)", overflowY: "auto" }}>
+      {/* Top KPIs */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+        {[
+          { label: "TOTAL LEADS", value: leads.length, color: "#3b82f6" },
+          { label: "🔴 HOT", value: totalHot, color: "#ef4444" },
+          { label: "🟡 WARM", value: totalWarm, color: "#f59e0b" },
+          { label: "🏆 GANADOS", value: totalWon, color: "#22c55e" },
+          { label: "HOY", value: followupHoy, color: "#a855f7", sub: "seguimientos" },
+          { label: "ATASCADOS", value: atascados, color: atascados > 0 ? "#ef4444" : "#22c55e", sub: ">7 días" },
+        ].map(k => (
+          <div key={k.label} style={{ background: "#0f172a", border: `1px solid ${k.color}30`, borderRadius: "8px", padding: "12px 18px", flex: "1", minWidth: "120px" }}>
+            <div style={{ color: "#475569", fontSize: "10px", letterSpacing: "1px" }}>{k.label}</div>
+            <div style={{ color: k.color, fontSize: "28px", fontWeight: "700", lineHeight: "1" }}>{k.value}</div>
+            {k.sub && <div style={{ color: "#475569", fontSize: "10px" }}>{k.sub}</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* Controls */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "16px", flexWrap: "wrap" }}>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar empresa o contacto..."
+          style={{ background: "#0f172a", border: "1px solid #1e3a5f", color: "#e2e8f0", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", flex: "1", minWidth: "200px" }}
+        />
+        {["all","hot","warm","cold","vip"].map(f => (
+          <button key={f} onClick={() => setFilter(f)} style={{
+            background: filter === f ? "#3b82f6" : "#0f172a",
+            border: "1px solid " + (filter === f ? "#3b82f6" : "#1e3a5f"),
+            color: filter === f ? "#fff" : "#64748b",
+            borderRadius: "6px", padding: "6px 12px", fontSize: "11px", cursor: "pointer",
+          }}>{f === "all" ? "Todos" : f === "vip" ? "★ VIP" : f.toUpperCase()}</button>
+        ))}
+        {["kanban","table"].map(v => (
+          <button key={v} onClick={() => setView(v)} style={{
+            background: view === v ? "#1e293b" : "#0f172a",
+            border: "1px solid #1e3a5f", color: view === v ? "#e2e8f0" : "#475569",
+            borderRadius: "6px", padding: "6px 10px", fontSize: "11px", cursor: "pointer",
+          }}>{v === "kanban" ? "🗂 Kanban" : "📋 Tabla"}</button>
+        ))}
+        <button onClick={refresh} style={{ background: "#0f172a", border: "1px solid #1e3a5f", color: "#3b82f6", borderRadius: "6px", padding: "6px 10px", fontSize: "11px", cursor: "pointer" }}>↺ Actualizar</button>
+      </div>
+
+      {loading ? (
+        <div style={{ color: "#475569", textAlign: "center", padding: "40px" }}>Cargando pipeline desde Airtable...</div>
+      ) : view === "kanban" ? (
+        <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "20px", alignItems: "flex-start" }}>
+          {stagesWithLeads.map(stage => {
+            const stageLeads = byStage[stage.id] || [];
+            return (
+              <div key={stage.id} style={{ minWidth: "220px", maxWidth: "240px", flex: "0 0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <span style={{ color: stage.color, fontSize: "11px", fontWeight: "700", letterSpacing: "0.5px" }}>
+                    {stage.icon} {stage.label.toUpperCase()}
+                  </span>
+                  <span style={{ background: stage.color+"20", color: stage.color, borderRadius: "10px", padding: "1px 7px", fontSize: "11px", fontWeight: "700" }}>
+                    {stageLeads.length}
+                  </span>
+                </div>
+                <div style={{ background: "#080d1a", borderRadius: "8px", padding: "8px", minHeight: "80px", border: `1px solid ${stage.color}15` }}>
+                  {stageLeads.length === 0
+                    ? <div style={{ color: "#1e293b", fontSize: "11px", textAlign: "center", padding: "20px 0" }}>—</div>
+                    : stageLeads.sort((a,b) => (b.fields?.Score_IA||0) - (a.fields?.Score_IA||0)).map(lead => (
+                        <LeadCard key={lead.id} lead={lead} onTrigger={triggerAgent} />
+                      ))
+                  }
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #1e293b", color: "#475569" }}>
+                {["Empresa","Contacto","Sector","Robot","Score","Estado","Temperatura","Agente","Próx. Contacto","Evento"].map(h => (
+                  <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontSize: "10px", letterSpacing: "0.5px" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.sort((a,b) => (b.fields?.Score_IA||0) - (a.fields?.Score_IA||0)).map(lead => {
+                const f = lead.fields || {};
+                const temp = f.Clasificacion || f.Temperatura || "cold";
+                const tc = TEMP_COLORS[temp] || "#64748b";
+                return (
+                  <tr key={lead.id} style={{ borderBottom: "1px solid #0f172a" }}>
+                    <td style={{ padding: "7px 10px", color: "#e2e8f0", fontWeight: "600" }}>{f.Empresa||"—"}{f.Es_VIP&&<span style={{color:"#f59e0b",marginLeft:"4px"}}>★</span>}</td>
+                    <td style={{ padding: "7px 10px", color: "#94a3b8" }}>{(f.Name||"").split(" ")[0]||"—"}</td>
+                    <td style={{ padding: "7px 10px", color: "#64748b" }}>{f.Sector||"—"}</td>
+                    <td style={{ padding: "7px 10px", color: "#60a5fa", fontSize: "11px" }}>{(f.Robot_Recomendado||"—").replace(" Limpieza","").replace(" Delivery","")}</td>
+                    <td style={{ padding: "7px 10px" }}><span style={{ color: tc, fontWeight: "700" }}>{f.Score_IA||"—"}</span></td>
+                    <td style={{ padding: "7px 10px", color: "#94a3b8", fontSize: "11px" }}>{f.Workflow_State||"—"}</td>
+                    <td style={{ padding: "7px 10px" }}><span style={{ color: tc, fontSize: "11px", fontWeight: "700" }}>{TEMP_LABELS[temp]||"—"}</span></td>
+                    <td style={{ padding: "7px 10px", color: "#8b5cf6", fontSize: "11px" }}>{f.Agente_Actual||"—"}</td>
+                    <td style={{ padding: "7px 10px", color: "#475569", fontSize: "11px" }}>{f.Fecha_Seguimiento||"—"}</td>
+                    <td style={{ padding: "7px 10px", color: "#334155", fontSize: "10px", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.Ultimo_Evento||"—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── AGENT TEAM MAP ──────────────────────────────────────────────────────────
+
+function AgentTeamMapTab() {
+  const { leads } = useLeads();
+  const clientes = useClientes();
+  const [selected, setSelected] = useState(null);
+
+  const totalLeads = leads.length;
+  const hotLeads = leads.filter(l => (l.fields?.Clasificacion||l.fields?.Temperatura||"").toLowerCase()==="hot").length;
+  const waSent = leads.filter(l => ["wa_sent","wa_replied"].includes(l.fields?.Workflow_State||"")).length;
+  const emailSent = leads.filter(l => ["email_sent","email_opened","replied"].includes(l.fields?.Workflow_State||"")).length;
+  const proposals = leads.filter(l => ["proposal_sent","meeting_scheduled"].includes(l.fields?.Workflow_State||"")).length;
+  const won = leads.filter(l => l.fields?.Workflow_State==="won").length;
+
+  const AGENTS = [
+    {
+      id: "APOLO", name: "APOLO", icon: "🎯", color: "#f59e0b",
+      role: "Prospección Diaria", schedule: "6AM Lun-Vie",
+      desc: "Busca 50-100 leads/día en Apollo.io. 5 verticales: restaurantes, hoteles, retail, hospitales, corporativos CDMX.",
+      stats: [`${totalLeads} leads generados`, "5 verticales activas"],
+      status: "ACTIVO",
+      outputs: ["ZEUS"],
+    },
+    {
+      id: "ZEUS", name: "ZEUS", icon: "🧠", color: "#6366f1",
+      role: "Scoring + Clasificación", schedule: "Cada 15 min",
+      desc: "Califica leads 0-100. Clasifica HOT/WARM/COLD. Detecta empresas VIP. Enruta a MERCURY (HOT) o HERMES (WARM).",
+      stats: [`${hotLeads} HOT activos`, "VIP → alerta Iván"],
+      status: "ACTIVO",
+      inputs: ["APOLO"],
+      outputs: ["MERCURY","HERMES","MORNING"],
+    },
+    {
+      id: "MERCURY", name: "MERCURY", icon: "💬", color: "#22c55e",
+      role: "WhatsApp + Cadencias", schedule: "Cada hora",
+      desc: "Cadencia A (activaciones, 3 días) y B (corporativos, 90 días). Template primer contacto. Follow-ups personalizados con Claude.",
+      stats: [`${waSent} WA enviados`, "Cadencia A: 3 días | B: 90 días"],
+      status: "ACTIVO",
+      inputs: ["ZEUS"],
+      outputs: ["ATLAS","NEXUS"],
+    },
+    {
+      id: "HERMES", name: "HERMES", icon: "📧", color: "#3b82f6",
+      role: "Email Outreach", schedule: "Webhook (ZEUS)",
+      desc: "Emails personalizados con Claude por industria. Calcula ROI específico. Casos de éxito por sector. Requiere DNS botmate.mx (lunes).",
+      stats: [`${emailSent} emails enviados`, "ROI calc automático"],
+      status: "ACTIVO",
+      inputs: ["ZEUS"],
+      outputs: ["ATLAS","NEXUS"],
+    },
+    {
+      id: "ATLAS", name: "ATLAS", icon: "📋", color: "#a855f7",
+      role: "Propuestas + Contratos", schedule: "Webhook",
+      desc: "Genera propuestas PDF personalizadas. Calcula ROI con datos reales del cliente. Prepara contratos. Alertas de cotizaciones vencidas.",
+      stats: [`${proposals} propuestas activas`, "PDF automático"],
+      status: "ACTIVO",
+      inputs: ["MERCURY","HERMES"],
+      outputs: ["ARES"],
+    },
+    {
+      id: "ARES", name: "ARES", icon: "🤝", color: "#f97316",
+      role: "Post-Venta + Renovaciones", schedule: "9AM diario",
+      desc: "Check-in día 2, 7, 14, 30 post-instalación. Alerta renovación 30 días antes. Programa referidos día 30.",
+      stats: [`${clientes.length} clientes activos`, "Renovaciones monitoreadas"],
+      status: "ACTIVO",
+      inputs: ["ATLAS"],
+      outputs: [],
+    },
+    {
+      id: "MORNING", name: "ZEUS REPORT", icon: "☀️", color: "#06b6d4",
+      role: "Reporte Matutino", schedule: "7AM Lun-Vie",
+      desc: "Resumen diario a Telegram. Pipeline por etapa, HOT leads, seguimientos del día, deals atascados >7 días.",
+      stats: ["Telegram 7AM L-V", "Pipeline en tiempo real"],
+      status: "ACTIVO",
+      inputs: ["ZEUS"],
+      outputs: [],
+    },
+  ];
+
+  const sel = selected ? AGENTS.find(a => a.id === selected) : null;
+
+  return (
+    <div style={{ padding: "20px", height: "calc(100vh - 120px)", overflowY: "auto" }}>
+      <div style={{ marginBottom: "20px" }}>
+        <div style={{ color: "#e2e8f0", fontSize: "16px", fontWeight: "700", letterSpacing: "1px" }}>EQUIPO DE AGENTES — FLUJO DE VENTAS</div>
+        <div style={{ color: "#475569", fontSize: "12px", marginTop: "4px" }}>Click en un agente para ver detalles. Los agentes trabajan 24/7 en Railway.</div>
+      </div>
+
+      {/* Flow diagram */}
+      <div style={{ background: "#0a0f1e", border: "1px solid #1e293b", borderRadius: "12px", padding: "24px", marginBottom: "20px", overflowX: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0", minWidth: "800px" }}>
+          {/* APOLO */}
+          <div onClick={() => setSelected("APOLO")} style={{ cursor: "pointer", textAlign: "center", flex: "1" }}>
+            <div style={{ background: "#f59e0b15", border: `2px solid ${selected==="APOLO"?"#f59e0b":"#f59e0b40"}`, borderRadius: "12px", padding: "16px 12px" }}>
+              <div style={{ fontSize: "28px" }}>🎯</div>
+              <div style={{ color: "#f59e0b", fontWeight: "700", fontSize: "13px", marginTop: "4px" }}>APOLO</div>
+              <div style={{ color: "#64748b", fontSize: "10px" }}>Prospección</div>
+              <div style={{ color: "#f59e0b", fontSize: "11px", marginTop: "4px" }}>{totalLeads} leads</div>
+            </div>
+          </div>
+          {/* Arrow */}
+          <div style={{ color: "#1e3a5f", fontSize: "20px", padding: "0 8px" }}>→</div>
+          {/* ZEUS */}
+          <div onClick={() => setSelected("ZEUS")} style={{ cursor: "pointer", textAlign: "center", flex: "1" }}>
+            <div style={{ background: "#6366f115", border: `2px solid ${selected==="ZEUS"?"#6366f1":"#6366f140"}`, borderRadius: "12px", padding: "16px 12px" }}>
+              <div style={{ fontSize: "28px" }}>🧠</div>
+              <div style={{ color: "#6366f1", fontWeight: "700", fontSize: "13px", marginTop: "4px" }}>ZEUS</div>
+              <div style={{ color: "#64748b", fontSize: "10px" }}>Scoring + Routing</div>
+              <div style={{ color: "#6366f1", fontSize: "11px", marginTop: "4px" }}>{hotLeads} HOT</div>
+            </div>
+          </div>
+          {/* Double arrow to MERCURY + HERMES */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 8px", gap: "8px" }}>
+            <div style={{ color: "#22c55e", fontSize: "14px" }}>→ WA</div>
+            <div style={{ color: "#3b82f6", fontSize: "14px" }}>→ Email</div>
+          </div>
+          {/* MERCURY + HERMES stacked */}
+          <div style={{ flex: "1", display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div onClick={() => setSelected("MERCURY")} style={{ cursor: "pointer", background: "#22c55e15", border: `2px solid ${selected==="MERCURY"?"#22c55e":"#22c55e40"}`, borderRadius: "10px", padding: "10px 12px", display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "20px" }}>💬</span>
+              <div>
+                <div style={{ color: "#22c55e", fontWeight: "700", fontSize: "12px" }}>MERCURY</div>
+                <div style={{ color: "#64748b", fontSize: "10px" }}>WhatsApp · {waSent} enviados</div>
+              </div>
+            </div>
+            <div onClick={() => setSelected("HERMES")} style={{ cursor: "pointer", background: "#3b82f615", border: `2px solid ${selected==="HERMES"?"#3b82f6":"#3b82f640"}`, borderRadius: "10px", padding: "10px 12px", display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "20px" }}>📧</span>
+              <div>
+                <div style={{ color: "#3b82f6", fontWeight: "700", fontSize: "12px" }}>HERMES</div>
+                <div style={{ color: "#64748b", fontSize: "10px" }}>Email · {emailSent} enviados</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ color: "#1e3a5f", fontSize: "20px", padding: "0 8px" }}>→</div>
+          {/* ATLAS */}
+          <div onClick={() => setSelected("ATLAS")} style={{ cursor: "pointer", textAlign: "center", flex: "1" }}>
+            <div style={{ background: "#a855f715", border: `2px solid ${selected==="ATLAS"?"#a855f7":"#a855f740"}`, borderRadius: "12px", padding: "16px 12px" }}>
+              <div style={{ fontSize: "28px" }}>📋</div>
+              <div style={{ color: "#a855f7", fontWeight: "700", fontSize: "13px", marginTop: "4px" }}>ATLAS</div>
+              <div style={{ color: "#64748b", fontSize: "10px" }}>Propuestas</div>
+              <div style={{ color: "#a855f7", fontSize: "11px", marginTop: "4px" }}>{proposals} activas</div>
+            </div>
+          </div>
+          <div style={{ color: "#1e3a5f", fontSize: "20px", padding: "0 8px" }}>→</div>
+          {/* WIN + ARES */}
+          <div style={{ flex: "1", display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ background: "#22c55e15", border: "2px solid #22c55e40", borderRadius: "10px", padding: "10px 12px", textAlign: "center" }}>
+              <div style={{ fontSize: "20px" }}>🏆</div>
+              <div style={{ color: "#22c55e", fontWeight: "700", fontSize: "12px" }}>GANADOS</div>
+              <div style={{ color: "#22c55e", fontSize: "20px", fontWeight: "700" }}>{won}</div>
+            </div>
+            <div onClick={() => setSelected("ARES")} style={{ cursor: "pointer", background: "#f9731615", border: `2px solid ${selected==="ARES"?"#f97316":"#f9731640"}`, borderRadius: "10px", padding: "10px 12px", display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "20px" }}>🤝</span>
+              <div>
+                <div style={{ color: "#f97316", fontWeight: "700", fontSize: "12px" }}>ARES</div>
+                <div style={{ color: "#64748b", fontSize: "10px" }}>Post-venta · {clientes.length} clientes</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Agent detail card */}
+      {sel && (
+        <div style={{ background: "#0f172a", border: `1px solid ${sel.color}40`, borderRadius: "12px", padding: "20px", marginBottom: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <span style={{ fontSize: "36px" }}>{sel.icon}</span>
+              <div>
+                <div style={{ color: sel.color, fontWeight: "700", fontSize: "18px" }}>{sel.name}</div>
+                <div style={{ color: "#64748b", fontSize: "12px" }}>{sel.role} · {sel.schedule}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <span style={{ background: "#22c55e20", color: "#22c55e", border: "1px solid #22c55e40", borderRadius: "6px", padding: "4px 10px", fontSize: "11px" }}>{sel.status}</span>
+              <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", color: "#475569", cursor: "pointer", fontSize: "18px" }}>×</button>
+            </div>
+          </div>
+          <p style={{ color: "#94a3b8", fontSize: "13px", lineHeight: "1.6", marginBottom: "16px" }}>{sel.desc}</p>
+          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+            {sel.stats.map(s => (
+              <div key={s} style={{ background: "#0a0f1e", border: `1px solid ${sel.color}20`, borderRadius: "6px", padding: "8px 14px" }}>
+                <span style={{ color: sel.color, fontSize: "12px", fontWeight: "600" }}>{s}</span>
+              </div>
+            ))}
+            {sel.inputs && sel.inputs.length > 0 && (
+              <div style={{ background: "#0a0f1e", border: "1px solid #1e293b", borderRadius: "6px", padding: "8px 14px" }}>
+                <span style={{ color: "#475569", fontSize: "11px" }}>Recibe de: </span>
+                <span style={{ color: "#94a3b8", fontSize: "12px" }}>{sel.inputs.join(", ")}</span>
+              </div>
+            )}
+            {sel.outputs && sel.outputs.length > 0 && (
+              <div style={{ background: "#0a0f1e", border: "1px solid #1e293b", borderRadius: "6px", padding: "8px 14px" }}>
+                <span style={{ color: "#475569", fontSize: "11px" }}>Envía a: </span>
+                <span style={{ color: "#94a3b8", fontSize: "12px" }}>{sel.outputs.join(", ")}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Cadence reference */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <div style={{ background: "#0f172a", border: "1px solid #f59e0b30", borderRadius: "10px", padding: "16px" }}>
+          <div style={{ color: "#f59e0b", fontWeight: "700", marginBottom: "12px", fontSize: "13px" }}>CADENCIA A — ACTIVACIONES</div>
+          {[
+            { d: "H0", t: "WA template intro", canal: "💬" },
+            { d: "D1", t: "WA follow-up", canal: "💬" },
+            { d: "D2", t: "WA urgencia + disponibilidad", canal: "💬" },
+            { d: "D3", t: "⚡ IVÁN interviene directamente", canal: "👤" },
+          ].map(s => (
+            <div key={s.d} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "6px", fontSize: "12px" }}>
+              <span style={{ background: "#f59e0b20", color: "#f59e0b", borderRadius: "4px", padding: "1px 6px", fontSize: "10px", minWidth: "28px", textAlign: "center" }}>{s.d}</span>
+              <span style={{ color: "#64748b" }}>{s.canal}</span>
+              <span style={{ color: "#94a3b8" }}>{s.t}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: "#0f172a", border: "1px solid #3b82f630", borderRadius: "10px", padding: "16px" }}>
+          <div style={{ color: "#3b82f6", fontWeight: "700", marginBottom: "12px", fontSize: "13px" }}>CADENCIA B — CORPORATIVO</div>
+          {[
+            { d: "D0", t: "WA template intro breve", canal: "💬" },
+            { d: "D2", t: "Email propuesta formal + ROI", canal: "📧" },
+            { d: "D2", t: "WA confirma email", canal: "💬" },
+            { d: "D5", t: "WA caso de éxito sector", canal: "💬" },
+            { d: "D9", t: "Email manejo de objeción", canal: "📧" },
+            { d: "D14", t: "⚡ IVÁN contacto directo", canal: "👤" },
+            { d: "D30", t: "WA reactivación", canal: "💬" },
+            { d: "D90", t: "WA último intento → nurturing", canal: "💬" },
+          ].map(s => (
+            <div key={s.d+s.t} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "6px", fontSize: "12px" }}>
+              <span style={{ background: "#3b82f620", color: "#3b82f6", borderRadius: "4px", padding: "1px 6px", fontSize: "10px", minWidth: "28px", textAlign: "center" }}>{s.d}</span>
+              <span style={{ color: "#64748b" }}>{s.canal}</span>
+              <span style={{ color: "#94a3b8" }}>{s.t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: "chat", label: "⚡ Command Center" },
+  { id: "pipeline", label: "🔻 Pipeline" },
+  { id: "team", label: "⚡ Agentes" },
+  { id: "chat", label: "Command Center" },
+  { id: "monitor", label: "🔴 Live Monitor" },
   { id: "overview", label: "Overview" },
-  { id: "agents", label: "22 Agentes" },
-  { id: "workflows", label: "Flujos n8n" },
+  { id: "agents", label: "Flujos n8n" },
+  { id: "workflows", label: "Workflows" },
   { id: "roadmap", label: "Roadmap" },
   { id: "robots", label: "Robots" },
   { id: "sistemas", label: "Sistemas" },
 ];
 
 export default function WarRoom() {
-  const [activeTab, setActiveTab] = useState("chat");
+  const [activeTab, setActiveTab] = useState("pipeline");
+  const { leads } = useLeads();
+
+  const hotCount = leads.filter(l => (l.fields?.Clasificacion||l.fields?.Temperatura||"").toLowerCase()==="hot").length;
+  const today = new Date().toISOString().split("T")[0];
+  const followupHoy = leads.filter(l => l.fields?.Fecha_Seguimiento === today).length;
 
   const renderTab = () => {
     switch (activeTab) {
+      case "pipeline": return <PipelineTab />;
+      case "team": return <AgentTeamMapTab />;
       case "chat": return <CommandCenterTab />;
+      case "monitor": return <AgentMonitorTab />;
       case "overview": return <OverviewTab />;
       case "agents": return <AgentsTab />;
       case "workflows": return <WorkflowsTab />;
       case "roadmap": return <RoadmapTab />;
       case "robots": return <RobotsTab />;
       case "sistemas": return <SistemasTab />;
-      default: return <CommandCenterTab />;
+      default: return <PipelineTab />;
     }
   };
 
@@ -2453,14 +3326,21 @@ export default function WarRoom() {
         <div>
           <div style={STYLES.logo}>BotMate ⚡ War Room</div>
           <div style={{ color: "#475569", fontSize: "11px", marginTop: "3px", letterSpacing: "0.5px" }}>
-            Sistema de Inteligencia Artificial Comercial — 22 Agentes — 19 Robots — 22 Workflows
+            APOLO · ZEUS · MERCURY · HERMES · ATLAS · ARES — {leads.length} leads activos
           </div>
         </div>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <span style={STYLES.badge}>● SISTEMA ACTIVO</span>
-          <span style={{ ...STYLES.badge, background: "#7f1d1d20", border: "1px solid #ef4444", color: "#f87171" }}>
-            19 ROBOTS OCIOSOS
-          </span>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          {hotCount > 0 && (
+            <span style={{ ...STYLES.badge, background: "#ef444420", border: "1px solid #ef4444", color: "#f87171" }}>
+              🔴 {hotCount} HOT
+            </span>
+          )}
+          {followupHoy > 0 && (
+            <span style={{ ...STYLES.badge, background: "#f59e0b20", border: "1px solid #f59e0b", color: "#fbbf24" }}>
+              ⚡ {followupHoy} HOY
+            </span>
+          )}
+          <span style={STYLES.badge}>● AGENTES ACTIVOS</span>
         </div>
       </div>
 
@@ -2501,8 +3381,8 @@ export default function WarRoom() {
         fontSize: "10px",
         letterSpacing: "0.5px",
       }}>
-        <span>BOTMATE WAR ROOM v1.0 — Sistema IA Comercial</span>
-        <span>22 AGENTES | 19 ROBOTS | $247K MXN POTENCIAL/MES</span>
+        <span>BOTMATE WAR ROOM v2.0 — Sistema IA de Ventas B2B</span>
+        <span>APOLO · ZEUS · MERCURY · HERMES · ATLAS · ARES</span>
         <span>botmate.mx</span>
       </div>
     </div>

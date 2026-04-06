@@ -1,0 +1,5 @@
+
+# Credenciales seguras — NUNCA subir a GitHub
+.credentials/
+*.env
+.env*
