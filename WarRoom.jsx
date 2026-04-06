@@ -37,15 +37,15 @@ function useLiveMetrics() {
 
 const STYLES = {
   root: {
-    background: "#080d1a",
-    color: "#e2e8f0",
-    fontFamily: "'DM Mono', 'Courier New', monospace",
+    background: "#f8fafc",
+    color: "#0f172a",
+    fontFamily: "system-ui, -apple-system, 'Inter', sans-serif",
     minHeight: "100vh",
     fontSize: "13px",
   },
   header: {
-    background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)",
-    borderBottom: "1px solid #1e3a5f",
+    background: "#ffffff",
+    borderBottom: "1px solid #e2e8f0",
     padding: "16px 24px",
     display: "flex",
     alignItems: "center",
@@ -54,22 +54,22 @@ const STYLES = {
   logo: {
     fontSize: "20px",
     fontWeight: "700",
-    color: "#3b82f6",
+    color: "#2563eb",
     letterSpacing: "2px",
     textTransform: "uppercase",
   },
   badge: {
-    background: "#22c55e20",
-    border: "1px solid #22c55e",
-    color: "#22c55e",
+    background: "#dcfce7",
+    border: "1px solid #16a34a",
+    color: "#16a34a",
     padding: "3px 10px",
     borderRadius: "4px",
     fontSize: "11px",
     letterSpacing: "1px",
   },
   tabBar: {
-    background: "#0f172a",
-    borderBottom: "1px solid #1e3a5f",
+    background: "#ffffff",
+    borderBottom: "1px solid #e2e8f0",
     display: "flex",
     overflowX: "auto",
     padding: "0 24px",
@@ -77,8 +77,8 @@ const STYLES = {
   tab: (active) => ({
     padding: "12px 20px",
     cursor: "pointer",
-    borderBottom: active ? "2px solid #3b82f6" : "2px solid transparent",
-    color: active ? "#3b82f6" : "#64748b",
+    borderBottom: active ? "2px solid #2563eb" : "2px solid transparent",
+    color: active ? "#2563eb" : "#64748b",
     whiteSpace: "nowrap",
     fontSize: "12px",
     letterSpacing: "0.5px",
@@ -104,10 +104,11 @@ const STYLES = {
     marginBottom: "20px",
   },
   card: {
-    background: "#0f172a",
-    border: "1px solid #1e3a5f",
-    borderRadius: "8px",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "12px",
     padding: "16px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
   },
   cardTitle: {
     color: "#94a3b8",
@@ -122,7 +123,7 @@ const STYLES = {
   statBig: {
     fontSize: "28px",
     fontWeight: "700",
-    color: "#e2e8f0",
+    color: "#0f172a",
     lineHeight: "1",
   },
   statSub: {
@@ -131,8 +132,8 @@ const STYLES = {
     marginTop: "4px",
   },
   alertBanner: {
-    background: "linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%)",
-    border: "2px solid #ef4444",
+    background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+    border: "2px solid #f59e0b",
     borderRadius: "8px",
     padding: "16px 20px",
     marginBottom: "20px",
@@ -141,27 +142,27 @@ const STYLES = {
     justifyContent: "space-between",
   },
   alertText: {
-    color: "#fca5a5",
+    color: "#92400e",
     fontWeight: "700",
     fontSize: "15px",
     letterSpacing: "1px",
   },
   alertSub: {
-    color: "#f87171",
+    color: "#b45309",
     fontSize: "12px",
     marginTop: "4px",
   },
   sectionTitle: {
-    color: "#3b82f6",
+    color: "#2563eb",
     fontSize: "12px",
     letterSpacing: "2px",
     textTransform: "uppercase",
     marginBottom: "12px",
     paddingBottom: "6px",
-    borderBottom: "1px solid #1e3a5f",
+    borderBottom: "1px solid #e2e8f0",
   },
   agentCard: (color) => ({
-    background: "#0f172a",
+    background: "#ffffff",
     border: `1px solid ${color}40`,
     borderLeft: `3px solid ${color}`,
     borderRadius: "6px",
@@ -171,7 +172,7 @@ const STYLES = {
     marginBottom: "8px",
   }),
   agentName: {
-    color: "#e2e8f0",
+    color: "#0f172a",
     fontWeight: "700",
     fontSize: "13px",
     marginBottom: "3px",
@@ -190,22 +191,22 @@ const STYLES = {
     color: "#475569",
   },
   promptBox: {
-    background: "#020617",
-    border: "1px solid #1e3a5f",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
     borderRadius: "6px",
     padding: "14px",
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "#334155",
     lineHeight: "1.7",
     whiteSpace: "pre-wrap",
-    fontFamily: "'DM Mono', 'Courier New', monospace",
+    fontFamily: "'Courier New', monospace",
     maxHeight: "400px",
     overflowY: "auto",
   },
   copyBtn: {
-    background: "#1e3a5f",
-    border: "1px solid #3b82f6",
-    color: "#3b82f6",
+    background: "#eff6ff",
+    border: "1px solid #2563eb",
+    color: "#2563eb",
     padding: "5px 12px",
     borderRadius: "4px",
     cursor: "pointer",
@@ -229,26 +230,26 @@ const STYLES = {
     borderCollapse: "collapse",
   },
   th: {
-    background: "#0f172a",
+    background: "#f8fafc",
     color: "#475569",
     fontSize: "10px",
     letterSpacing: "1.5px",
     textTransform: "uppercase",
     padding: "10px 12px",
     textAlign: "left",
-    borderBottom: "1px solid #1e3a5f",
+    borderBottom: "1px solid #e2e8f0",
   },
   td: {
     padding: "10px 12px",
-    borderBottom: "1px solid #0f172a",
-    color: "#94a3b8",
+    borderBottom: "1px solid #e2e8f0",
+    color: "#334155",
     fontSize: "12px",
   },
   trEven: {
-    background: "#0a1628",
+    background: "#ffffff",
   },
   trOdd: {
-    background: "#080d1a",
+    background: "#f8fafc",
   },
   dot: (color) => ({
     width: "8px",
@@ -259,7 +260,7 @@ const STYLES = {
     marginRight: "6px",
   }),
   progressBarOuter: {
-    background: "#1e293b",
+    background: "#e2e8f0",
     borderRadius: "4px",
     height: "6px",
     width: "100%",
@@ -273,8 +274,8 @@ const STYLES = {
     transition: "width 0.5s ease",
   }),
   workflowCard: {
-    background: "#0f172a",
-    border: "1px solid #1e3a5f",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
     borderRadius: "8px",
     padding: "16px",
     marginBottom: "12px",
@@ -294,7 +295,7 @@ const STYLES = {
     color: "#64748b",
   },
   arrow: {
-    color: "#3b82f6",
+    color: "#2563eb",
     fontSize: "14px",
   },
   stepBadge: (color) => ({
@@ -307,14 +308,14 @@ const STYLES = {
     whiteSpace: "nowrap",
   }),
   roadmapWeek: {
-    background: "#0f172a",
-    border: "1px solid #1e3a5f",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
     borderRadius: "8px",
     padding: "16px",
     marginBottom: "12px",
   },
   weekLabel: {
-    color: "#fbbf24",
+    color: "#d97706",
     fontWeight: "700",
     fontSize: "13px",
     marginBottom: "10px",
@@ -341,8 +342,8 @@ const STYLES = {
     justifyContent: "center",
   },
   robotCard: {
-    background: "#0f172a",
-    border: "1px solid #1e3a5f",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
     borderRadius: "6px",
     padding: "12px 14px",
     display: "flex",
@@ -351,9 +352,9 @@ const STYLES = {
     marginBottom: "8px",
   },
   availBadge: {
-    background: "#14532d",
-    border: "1px solid #22c55e",
-    color: "#22c55e",
+    background: "#dcfce7",
+    border: "1px solid #16a34a",
+    color: "#16a34a",
     padding: "3px 9px",
     borderRadius: "4px",
     fontSize: "10px",
@@ -361,9 +362,9 @@ const STYLES = {
     fontWeight: "700",
   },
   rentedBadge: {
-    background: "#1e3a5f",
-    border: "1px solid #3b82f6",
-    color: "#3b82f6",
+    background: "#dbeafe",
+    border: "1px solid #2563eb",
+    color: "#2563eb",
     padding: "3px 9px",
     borderRadius: "4px",
     fontSize: "10px",
@@ -371,10 +372,10 @@ const STYLES = {
     fontWeight: "700",
   },
   credRow: (idx) => ({
-    background: idx % 2 === 0 ? "#0a1628" : "#080d1a",
+    background: idx % 2 === 0 ? "#ffffff" : "#f8fafc",
   }),
   maskedPw: {
-    color: "#475569",
+    color: "#94a3b8",
     letterSpacing: "3px",
     fontSize: "14px",
   },
@@ -387,7 +388,7 @@ const STYLES = {
     fontSize: "10px",
   }),
   actionItem: {
-    background: "#0f172a",
+    background: "#ffffff",
     border: "1px solid #fbbf2440",
     borderLeft: "3px solid #fbbf24",
     borderRadius: "4px",
@@ -397,11 +398,11 @@ const STYLES = {
     alignItems: "center",
     gap: "10px",
     fontSize: "12px",
-    color: "#d1d5db",
+    color: "#374151",
   },
   priorityHigh: {
-    background: "#7f1d1d30",
-    color: "#f87171",
+    background: "#fee2e2",
+    color: "#dc2626",
     border: "1px solid #ef4444",
     padding: "2px 7px",
     borderRadius: "3px",
@@ -414,15 +415,15 @@ const STYLES = {
 // ─── DATA ───────────────────────────────────────────────────────────────────
 
 const STACK = [
-  { name: "Railway + n8n", role: "MOTOR", cost: "~$10/mes", color: "#22c55e" },
+  { name: "Railway + n8n", role: "MOTOR", cost: "~$10/mes", color: "#16a34a" },
   { name: "Claude API Anthropic", role: "IA", cost: "~$50-80/mes", color: "#818cf8" },
-  { name: "Meta Cloud API", role: "WA", cost: "~$10-20/mes", color: "#3b82f6" },
-  { name: "Airtable", role: "CRM", cost: "Gratis→$10/mes", color: "#22c55e" },
+  { name: "Meta Cloud API", role: "WA", cost: "~$10-20/mes", color: "#2563eb" },
+  { name: "Airtable", role: "CRM", cost: "Gratis→$10/mes", color: "#16a34a" },
   { name: "Google Workspace", role: "EMAIL", cost: "$6/mes", color: "#fbbf24" },
   { name: "Meta Ads API", role: "ADS", cost: "Tu presupuesto", color: "#f97316" },
   { name: "Apollo.io", role: "PROSPECCIÓN", cost: "$49/mes", color: "#818cf8" },
-  { name: "Instantly.ai", role: "COLD EMAIL", cost: "$37/mes", color: "#3b82f6" },
-  { name: "Telegram Bot API", role: "NOTIFICACIONES", cost: "GRATIS", color: "#22c55e" },
+  { name: "Instantly.ai", role: "COLD EMAIL", cost: "$37/mes", color: "#2563eb" },
+  { name: "Telegram Bot API", role: "NOTIFICACIONES", cost: "GRATIS", color: "#16a34a" },
   { name: "Phantombuster", role: "LINKEDIN", cost: "$56/mes", color: "#a78bfa" },
 ];
 
@@ -434,7 +435,7 @@ const AGENTS = [
     name: "Director General IA",
     role: "Orquestador central",
     desc: "Reporte diario 7am vía Telegram a Ivan. Coordina todas las capas.",
-    color: "#3b82f6",
+    color: "#2563eb",
     prompt: `ROL: Eres el Director General IA de BotMate. Eres el cerebro central del sistema de automatización comercial.
 
 RESPONSABILIDADES:
@@ -482,7 +483,7 @@ FORMATO TELEGRAM:
     name: "Director de Ventas IA",
     role: "Pipeline, calificación, cierres",
     desc: "Gestiona el pipeline completo: desde lead hasta cierre. Define prioridades de seguimiento.",
-    color: "#22c55e",
+    color: "#16a34a",
     prompt: `ROL: Eres el Director de Ventas IA de BotMate. Tu único objetivo es convertir prospectos en clientes pagantes.
 
 RESPONSABILIDADES:
@@ -782,7 +783,7 @@ OUTPUT: Lista priorizada en Airtable con:
     name: "Agente de Outreach WhatsApp",
     role: "Secuencia 5 mensajes personalizados",
     desc: "Envía secuencia de 5 mensajes WA personalizados por vertical con timing optimizado.",
-    color: "#22c55e",
+    color: "#16a34a",
     prompt: `ROL: Eres el Agente de Outreach WhatsApp de BotMate. Inicias conversaciones que terminan en demos y ventas.
 
 HERRAMIENTA: Meta Cloud API vía n8n
@@ -826,7 +827,7 @@ REGLAS:
     name: "Agente de Cold Email",
     role: "Instantly.ai, secuencias 5 emails",
     desc: "Gestiona campañas de cold email vía Instantly.ai con 5 emails por vertical.",
-    color: "#22c55e",
+    color: "#16a34a",
     prompt: `ROL: Eres el Agente de Cold Email de BotMate. Generas y optimizas secuencias de email que abren conversaciones.
 
 HERRAMIENTA: Instantly.ai API
@@ -868,7 +869,7 @@ A/B TESTING: Probar 2 variantes de asunto en cada campaña.`,
     name: "Agente de LinkedIn",
     role: "Phantombuster, conexiones + mensajes",
     desc: "Automatiza conexiones y mensajes en LinkedIn vía Phantombuster para decisores clave.",
-    color: "#22c55e",
+    color: "#16a34a",
     prompt: `ROL: Eres el Agente de LinkedIn de BotMate. Construyes relaciones con decisores en LinkedIn de forma sistemática.
 
 HERRAMIENTA: Phantombuster API
@@ -901,7 +902,7 @@ MÉTRICAS:
     name: "Agente de Reactivación",
     role: "Leads fríos cada 30 días",
     desc: "Reactiva leads que no respondieron con nuevo ángulo de acercamiento cada mes.",
-    color: "#22c55e",
+    color: "#16a34a",
     prompt: `ROL: Eres el Agente de Reactivación de BotMate. Conviertes "no por ahora" en "sí cuando llegue el momento correcto".
 
 CRITERIOS DE REACTIVACIÓN:
@@ -929,7 +930,7 @@ REGLA DE ORO: Siempre nuevo ángulo, nunca repetir el mismo mensaje. Demostrar q
     name: "Agente de Cierre",
     role: "Follow-up agresivo últimas 72h",
     desc: "Activa secuencia de cierre agresivo cuando una cotización está por vencer.",
-    color: "#f87171",
+    color: "#dc2626",
     prompt: `ROL: Eres el Agente de Cierre de BotMate. Tu trabajo es convertir cotizaciones enviadas en contratos firmados.
 
 TRIGGER DE ACTIVACIÓN:
@@ -1007,7 +1008,7 @@ POSICIONAMIENTO CLAVE EN PDF:
     name: "Agente de Meta Ads",
     role: "Campañas FB/IG automáticas",
     desc: "Crea, optimiza y reporta campañas de Facebook e Instagram Ads automáticamente.",
-    color: "#3b82f6",
+    color: "#2563eb",
     prompt: `ROL: Eres el Agente de Meta Ads de BotMate. Maximizas el ROI de cada peso invertido en publicidad digital.
 
 HERRAMIENTA: Meta Ads API
@@ -1041,7 +1042,7 @@ OPTIMIZACIÓN AUTOMÁTICA:
     name: "Agente de Contenido Social",
     role: "Posts FB/IG/LinkedIn diarios",
     desc: "Genera y publica contenido orgánico diario optimizado para cada plataforma.",
-    color: "#3b82f6",
+    color: "#2563eb",
     prompt: `ROL: Eres el Agente de Contenido Social de BotMate. Mantienes la presencia digital activa y atractiva en todas las plataformas.
 
 PLATAFORMAS: Facebook, Instagram, LinkedIn
@@ -1072,7 +1073,7 @@ VOZ DE MARCA: Directa, ejecutiva, orientada a resultados. Nunca corporativa o ab
     name: "Agente de Video Scripts",
     role: "Guiones para Reels y demos",
     desc: "Escribe guiones de video para Reels virales y demos de robots por industria.",
-    color: "#3b82f6",
+    color: "#2563eb",
     prompt: `ROL: Eres el Agente de Video Scripts de BotMate. Cada guión que escribes debe generar curiosidad, deseo y acción.
 
 TIPOS DE VIDEO:
@@ -1106,7 +1107,7 @@ HOOKS COMPROBADOS:
     name: "Agente SEO/Blog",
     role: "Artículos para botmate.mx",
     desc: "Genera artículos SEO para posicionar BotMate en búsquedas de robots de servicio en México.",
-    color: "#3b82f6",
+    color: "#2563eb",
     prompt: `ROL: Eres el Agente SEO/Blog de BotMate. Generas contenido que posiciona botmate.mx en las primeras posiciones de Google.
 
 KEYWORDS OBJETIVO:
@@ -1263,7 +1264,7 @@ const WORKFLOWS = [
       { label: "Apollo.io API", color: "#818cf8" },
       { label: "Agente Enriquecimiento", color: "#818cf8" },
       { label: "Agente Segmentación", color: "#818cf8" },
-      { label: "Airtable CRM", color: "#22c55e" },
+      { label: "Airtable CRM", color: "#16a34a" },
     ],
     desc: "Genera 50+ leads diarios por vertical, enriquece datos y los prioriza automáticamente en el CRM.",
   },
@@ -1271,12 +1272,12 @@ const WORKFLOWS = [
     id: 2,
     name: "Captura y Calificación",
     trigger: "Lead Ad Meta / Formulario web",
-    color: "#3b82f6",
+    color: "#2563eb",
     steps: [
-      { label: "Lead Ad / Web Form", color: "#3b82f6" },
-      { label: "Airtable CRM", color: "#22c55e" },
+      { label: "Lead Ad / Web Form", color: "#2563eb" },
+      { label: "Airtable CRM", color: "#16a34a" },
       { label: "Claude Ventas IA", color: "#818cf8" },
-      { label: "WhatsApp + Email", color: "#22c55e" },
+      { label: "WhatsApp + Email", color: "#16a34a" },
     ],
     desc: "Captura leads de ads y web, los califica con IA en segundos y dispara respuesta inmediata.",
   },
@@ -1288,8 +1289,8 @@ const WORKFLOWS = [
     steps: [
       { label: "Cron 48h checker", color: "#fbbf24" },
       { label: "Leads sin respuesta", color: "#64748b" },
-      { label: "Outreach WA + Email", color: "#22c55e" },
-      { label: "Registro Airtable", color: "#22c55e" },
+      { label: "Outreach WA + Email", color: "#16a34a" },
+      { label: "Registro Airtable", color: "#16a34a" },
     ],
     desc: "Detecta automáticamente leads sin respuesta y activa follow-up multicanal sin intervención humana.",
   },
@@ -1297,12 +1298,12 @@ const WORKFLOWS = [
     id: 4,
     name: "Cotización en Tiempo Real",
     trigger: "Intent detection (palabras clave precio)",
-    color: "#22c55e",
+    color: "#16a34a",
     steps: [
       { label: "Detección intención", color: "#ef4444" },
       { label: "Claude Finanzas IA", color: "#818cf8" },
       { label: "Genera PDF", color: "#fbbf24" },
-      { label: "Gmail + WhatsApp", color: "#22c55e" },
+      { label: "Gmail + WhatsApp", color: "#16a34a" },
     ],
     desc: "Desde detección de intención hasta cotización PDF enviada: menos de 60 segundos.",
   },
@@ -1315,7 +1316,7 @@ const WORKFLOWS = [
       { label: "Cron semanal", color: "#f97316" },
       { label: "Claude Marketing IA", color: "#818cf8" },
       { label: "7 posts generados", color: "#94a3b8" },
-      { label: "FB / IG / LinkedIn", color: "#3b82f6" },
+      { label: "FB / IG / LinkedIn", color: "#2563eb" },
     ],
     desc: "Genera y programa automáticamente el contenido de la semana completa en todos los canales.",
   },
@@ -1328,7 +1329,7 @@ const WORKFLOWS = [
       { label: "Cron mensual", color: "#06b6d4" },
       { label: "Leads fríos 30d+", color: "#64748b" },
       { label: "Nuevo ángulo IA", color: "#818cf8" },
-      { label: "Secuencia nueva", color: "#22c55e" },
+      { label: "Secuencia nueva", color: "#16a34a" },
     ],
     desc: "Reactiva toda la base de leads fríos con un ángulo diferente cada mes. Ningún lead se pierde.",
   },
@@ -1337,7 +1338,7 @@ const WORKFLOWS = [
 const ROADMAP = [
   {
     week: "SEMANA 1 — FUNDAMENTOS",
-    color: "#3b82f6",
+    color: "#2563eb",
     items: [
       "Configurar Railway + n8n con credenciales de todas las plataformas",
       "Activar Agente de Sistemas (22) — registro completo de plataformas",
@@ -1349,7 +1350,7 @@ const ROADMAP = [
   },
   {
     week: "SEMANA 2 — OUTREACH",
-    color: "#22c55e",
+    color: "#16a34a",
     items: [
       "Activar Agente WhatsApp (10) con secuencia de 5 mensajes por vertical",
       "Configurar Instantly.ai — primera campaña de cold email (100 contactos)",
@@ -1395,22 +1396,22 @@ const ROBOTS = Array.from({ length: 19 }, (_, i) => ({
 }));
 
 const CREDENTIALS = [
-  { platform: "Railway + n8n", user: "ivan@botmate.mx", cost: "~$10/mes", renewal: "2026-04-15", status: "ACTIVO", color: "#22c55e" },
+  { platform: "Railway + n8n", user: "ivan@botmate.mx", cost: "~$10/mes", renewal: "2026-04-15", status: "ACTIVO", color: "#16a34a" },
   { platform: "Claude API Anthropic", user: "ivan@botmate.mx", cost: "~$50-80/mes", renewal: "Por uso", status: "ACTIVO", color: "#818cf8" },
-  { platform: "Meta Cloud API", user: "BotMate Business", cost: "~$10-20/mes", renewal: "2026-04-30", status: "ACTIVO", color: "#3b82f6" },
-  { platform: "Airtable", user: "ivan@botmate.mx", cost: "$0-10/mes", renewal: "2026-05-01", status: "ACTIVO", color: "#22c55e" },
+  { platform: "Meta Cloud API", user: "BotMate Business", cost: "~$10-20/mes", renewal: "2026-04-30", status: "ACTIVO", color: "#2563eb" },
+  { platform: "Airtable", user: "ivan@botmate.mx", cost: "$0-10/mes", renewal: "2026-05-01", status: "ACTIVO", color: "#16a34a" },
   { platform: "Google Workspace", user: "ivan@botmate.mx", cost: "$6/mes", renewal: "2026-04-20", status: "ACTIVO", color: "#fbbf24" },
   { platform: "Meta Ads API", user: "BotMate Business", cost: "Variable", renewal: "Continuo", status: "ACTIVO", color: "#f97316" },
   { platform: "Apollo.io", user: "ivan@botmate.mx", cost: "$49/mes", renewal: "2026-04-18", status: "ACTIVO", color: "#818cf8" },
-  { platform: "Instantly.ai", user: "ivan@botmate.mx", cost: "$37/mes", renewal: "2026-04-22", status: "ACTIVO", color: "#3b82f6" },
-  { platform: "Telegram Bot API", user: "@botmate_bot", cost: "GRATIS", renewal: "N/A", status: "ACTIVO", color: "#22c55e" },
+  { platform: "Instantly.ai", user: "ivan@botmate.mx", cost: "$37/mes", renewal: "2026-04-22", status: "ACTIVO", color: "#2563eb" },
+  { platform: "Telegram Bot API", user: "@botmate_bot", cost: "GRATIS", renewal: "N/A", status: "ACTIVO", color: "#16a34a" },
   { platform: "Phantombuster", user: "ivan@botmate.mx", cost: "$56/mes", renewal: "2026-04-25", status: "ACTIVO", color: "#a78bfa" },
 ];
 
 const LAYER_COLORS = {
-  1: "#3b82f6",
+  1: "#2563eb",
   2: "#818cf8",
-  3: "#22c55e",
+  3: "#16a34a",
   4: "#f97316",
   5: "#06b6d4",
 };
@@ -1442,7 +1443,7 @@ function AgentDetail({ agent, onBack }) {
             <span style={{ color: agent.color, fontWeight: "700", fontSize: "18px", marginRight: "10px" }}>
               [{agent.id}]
             </span>
-            <span style={{ color: "#e2e8f0", fontWeight: "700", fontSize: "15px" }}>{agent.name}</span>
+            <span style={{ color: "#0f172a", fontWeight: "700", fontSize: "15px" }}>{agent.name}</span>
           </div>
           <span style={STYLES.platformBadge(agent.color)}>{agent.layerName}</span>
         </div>
@@ -1478,8 +1479,8 @@ function OverviewTab() {
   const pipeline = leads.pipeline || {};
 
   const PIPELINE_COLORS = {
-    "Nuevo": "#3b82f6", "Contactado": "#f59e0b", "Calificado": "#8b5cf6",
-    "Propuesta": "#f97316", "Negociación": "#ec4899", "Cerrado Ganado": "#22c55e",
+    "Nuevo": "#2563eb", "Contactado": "#f59e0b", "Calificado": "#8b5cf6",
+    "Propuesta": "#f97316", "Negociación": "#ec4899", "Cerrado Ganado": "#16a34a",
     "Cerrado Perdido": "#ef4444", "Seguimiento": "#06b6d4"
   };
 
@@ -1488,12 +1489,12 @@ function OverviewTab() {
       {/* LIVE INDICATOR */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: loading ? "#f59e0b" : "#22c55e", display: "inline-block", boxShadow: `0 0 6px ${loading ? "#f59e0b" : "#22c55e"}` }} />
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: loading ? "#f59e0b" : "#16a34a", display: "inline-block", boxShadow: `0 0 6px ${loading ? "#f59e0b" : "#16a34a"}` }} />
           <span style={{ color: "#64748b", fontSize: "11px", letterSpacing: "1px" }}>
             {loading ? "CARGANDO DATOS..." : `DATOS EN VIVO · ${lastUpdated ? lastUpdated.toLocaleTimeString("es-MX") : ""}`}
           </span>
         </div>
-        <button onClick={refresh} style={{ background: "#1e3a5f", border: "1px solid #3b82f6", color: "#3b82f6", padding: "4px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "11px" }}>
+        <button onClick={refresh} style={{ background: "#dbeafe", border: "1px solid #2563eb", color: "#2563eb", padding: "4px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "11px" }}>
           ↻ Actualizar
         </button>
       </div>
@@ -1511,10 +1512,10 @@ function OverviewTab() {
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ color: ingresoActual > 0 ? "#22c55e" : "#ef4444", fontSize: "28px", fontWeight: "700" }}>
+          <div style={{ color: ingresoActual > 0 ? "#16a34a" : "#ef4444", fontSize: "28px", fontWeight: "700" }}>
             ${ingresoActual > 0 ? (ingresoActual / 1000).toFixed(0) + "K" : "0"}
           </div>
-          <div style={{ color: "#f87171", fontSize: "11px" }}>MXN/mes actual</div>
+          <div style={{ color: "#dc2626", fontSize: "11px" }}>MXN/mes actual</div>
         </div>
       </div>
 
@@ -1522,11 +1523,11 @@ function OverviewTab() {
       <div style={STYLES.sectionTitle}>📊 KPIs EN TIEMPO REAL</div>
       <div style={{ ...STYLES.grid3, gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
         {[
-          { label: "LEADS TOTALES", value: leadsTotal, sub: `${leadsHoy} hoy`, color: "#3b82f6" },
-          { label: "ROBOTS ACTIVOS", value: `${robotsActivos}/${robots.total ?? 19}`, sub: `${robotsDisponibles} disponibles`, color: robotsActivos > 0 ? "#22c55e" : "#ef4444" },
-          { label: "REVENUE ACTUAL", value: ingresoActual > 0 ? `$${(ingresoActual/1000).toFixed(0)}K` : "$0", sub: "MXN/mes", color: ingresoActual > 0 ? "#22c55e" : "#ef4444" },
+          { label: "LEADS TOTALES", value: leadsTotal, sub: `${leadsHoy} hoy`, color: "#2563eb" },
+          { label: "ROBOTS ACTIVOS", value: `${robotsActivos}/${robots.total ?? 19}`, sub: `${robotsDisponibles} disponibles`, color: robotsActivos > 0 ? "#16a34a" : "#ef4444" },
+          { label: "REVENUE ACTUAL", value: ingresoActual > 0 ? `$${(ingresoActual/1000).toFixed(0)}K` : "$0", sub: "MXN/mes", color: ingresoActual > 0 ? "#16a34a" : "#ef4444" },
           { label: "POTENCIAL", value: `$${Math.round(potencialPerdido / 1000)}K`, sub: "MXN/mes por capturar", color: "#f59e0b" },
-          { label: "WORKFLOWS n8n", value: `${wfs.activos ?? 8}`, sub: `${wfs.total ?? 8} activos`, color: "#22c55e" },
+          { label: "WORKFLOWS n8n", value: `${wfs.activos ?? 8}`, sub: `${wfs.total ?? 8} activos`, color: "#16a34a" },
           { label: "SCORE PROMEDIO", value: leads.scorePromedio ?? "—", sub: "IA de calificación", color: "#8b5cf6" },
         ].map((kpi, i) => (
           <div key={i} style={{ ...STYLES.card, borderTop: `2px solid ${kpi.color}` }}>
@@ -1565,19 +1566,19 @@ function OverviewTab() {
       <div style={STYLES.sectionTitle}>🤖 ESTADO DE AGENTES</div>
       <div style={{ ...STYLES.grid3, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
         {[
-          { id: "01", name: "Prospección Apollo", status: "ACTIVO", next: "6:00 AM", color: "#22c55e" },
-          { id: "02", name: "Calificación IA", status: "ACTIVO", next: "Cada 5 min", color: "#22c55e" },
-          { id: "03", name: "WhatsApp Outreach", status: "ACTIVO", next: "Webhook", color: "#22c55e" },
-          { id: "04", name: "Cotización PDF", status: "ACTIVO", next: "Webhook", color: "#22c55e" },
-          { id: "05", name: "Contenido Social", status: "ACTIVO", next: "Lun 7:00 AM", color: "#22c55e" },
-          { id: "06", name: "Reporte Diario", status: "ACTIVO", next: "7:00 AM", color: "#22c55e" },
-          { id: "07", name: "Seguimiento Leads", status: "ACTIVO", next: "Cada hora", color: "#22c55e" },
-          { id: "08", name: "Monitor Pipeline", status: "ACTIVO", next: "Lun 8:00 AM", color: "#22c55e" },
+          { id: "01", name: "Prospección Apollo", status: "ACTIVO", next: "6:00 AM", color: "#16a34a" },
+          { id: "02", name: "Calificación IA", status: "ACTIVO", next: "Cada 5 min", color: "#16a34a" },
+          { id: "03", name: "WhatsApp Outreach", status: "ACTIVO", next: "Webhook", color: "#16a34a" },
+          { id: "04", name: "Cotización PDF", status: "ACTIVO", next: "Webhook", color: "#16a34a" },
+          { id: "05", name: "Contenido Social", status: "ACTIVO", next: "Lun 7:00 AM", color: "#16a34a" },
+          { id: "06", name: "Reporte Diario", status: "ACTIVO", next: "7:00 AM", color: "#16a34a" },
+          { id: "07", name: "Seguimiento Leads", status: "ACTIVO", next: "Cada hora", color: "#16a34a" },
+          { id: "08", name: "Monitor Pipeline", status: "ACTIVO", next: "Lun 8:00 AM", color: "#16a34a" },
           { id: "TG", name: "Telegram Notif.", status: "PENDIENTE", next: "Token requerido", color: "#f59e0b" },
         ].map((ag) => (
           <div key={ag.id} style={{ ...STYLES.card, borderLeft: `3px solid ${ag.color}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ color: "#e2e8f0", fontWeight: "700", fontSize: "12px" }}>AG-{ag.id} {ag.name}</div>
+              <div style={{ color: "#0f172a", fontWeight: "700", fontSize: "12px" }}>AG-{ag.id} {ag.name}</div>
               <div style={{ color: "#64748b", fontSize: "10px", marginTop: "2px" }}>Próx: {ag.next}</div>
             </div>
             <span style={{ ...STYLES.stepBadge(ag.color), fontSize: "10px" }}>{ag.status}</span>
@@ -1592,7 +1593,7 @@ function OverviewTab() {
           <div key={i} style={{ ...STYLES.card, borderLeft: `3px solid ${s.color}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ color: "#e2e8f0", fontWeight: "700", fontSize: "12px" }}>{s.name}</div>
+                <div style={{ color: "#0f172a", fontWeight: "700", fontSize: "12px" }}>{s.name}</div>
                 <div style={{ color: "#64748b", fontSize: "10px", marginTop: "3px", letterSpacing: "1px" }}>{s.role}</div>
               </div>
               <div style={{ ...STYLES.platformBadge(s.color), fontSize: "11px" }}>{s.cost}</div>
@@ -1622,7 +1623,7 @@ function AgentsTab() {
               <div style={{ color: "#94a3b8", fontSize: "11px", marginTop: "2px" }}>
                 {layerAgents[0]?.layerName.replace(`CAPA ${l} — `, "")}
               </div>
-              <div style={{ color: "#e2e8f0", fontSize: "22px", fontWeight: "700", marginTop: "6px" }}>
+              <div style={{ color: "#0f172a", fontSize: "22px", fontWeight: "700", marginTop: "6px" }}>
                 {layerAgents.length}
               </div>
               <div style={{ color: "#475569", fontSize: "10px" }}>agentes</div>
@@ -1641,8 +1642,8 @@ function AgentsTab() {
               key={agent.id}
               style={STYLES.agentCard(agent.color)}
               onClick={() => setSelected(agent)}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#172033")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#0f172a")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#eff6ff")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div style={{ flex: 1 }}>
@@ -1704,7 +1705,7 @@ function RoadmapTab() {
           {week.items.map((item, i) => (
             <div key={i} style={STYLES.checkItem}>
               <div style={STYLES.checkBox}>
-                <span style={{ color: "#1e293b", fontSize: "8px" }}>✓</span>
+                <span style={{ color: "#16a34a", fontSize: "8px" }}>✓</span>
               </div>
               <span>{item}</span>
             </div>
@@ -1724,8 +1725,8 @@ function RobotsTab() {
   const potential = robotsTotal * 13000;
 
   const STATUS_COLORS = {
-    "Desplegado": "#22c55e", "disponible": "#3b82f6",
-    "Disponible": "#3b82f6", "mantenimiento": "#f59e0b", "demo": "#8b5cf6"
+    "Desplegado": "#16a34a", "disponible": "#2563eb",
+    "Disponible": "#2563eb", "mantenimiento": "#f59e0b", "demo": "#8b5cf6"
   };
 
   return (
@@ -1735,7 +1736,7 @@ function RobotsTab() {
         <span style={{ color: "#64748b", fontSize: "11px" }}>
           {loading ? "⏳ Cargando datos de Airtable..." : `✅ Datos en vivo · ${lastUpdated?.toLocaleTimeString("es-MX") || ""}`}
         </span>
-        <button onClick={refresh} style={{ background: "#1e3a5f", border: "1px solid #3b82f6", color: "#3b82f6", padding: "4px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "11px" }}>↻</button>
+        <button onClick={refresh} style={{ background: "#dbeafe", border: "1px solid #2563eb", color: "#2563eb", padding: "4px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "11px" }}>↻</button>
       </div>
 
       <div style={STYLES.alertBanner}>
@@ -1750,7 +1751,7 @@ function RobotsTab() {
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ color: robotsActivos > 0 ? "#22c55e" : "#ef4444", fontSize: "28px", fontWeight: "700" }}>
+          <div style={{ color: robotsActivos > 0 ? "#16a34a" : "#ef4444", fontSize: "28px", fontWeight: "700" }}>
             {robotsActivos}/{robotsTotal}
           </div>
           <div style={{ color: "#94a3b8", fontSize: "11px" }}>robots activos</div>
@@ -1758,9 +1759,9 @@ function RobotsTab() {
       </div>
 
       <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
-        <div style={{ ...STYLES.card, flex: 1, borderTop: "2px solid #22c55e" }}>
+        <div style={{ ...STYLES.card, flex: 1, borderTop: "2px solid #16a34a" }}>
           <div style={STYLES.cardTitle}>REVENUE ACTUAL</div>
-          <div style={{ ...STYLES.statBig, color: ingresoActual > 0 ? "#22c55e" : "#ef4444" }}>
+          <div style={{ ...STYLES.statBig, color: ingresoActual > 0 ? "#16a34a" : "#ef4444" }}>
             ${ingresoActual.toLocaleString("es-MX")} MXN
           </div>
           <div style={STYLES.statSub}>por mes</div>
@@ -1770,9 +1771,9 @@ function RobotsTab() {
           <div style={{ ...STYLES.statBig, color: "#fbbf24" }}>${potential.toLocaleString("es-MX")} MXN</div>
           <div style={STYLES.statSub}>si todos activos</div>
         </div>
-        <div style={{ ...STYLES.card, flex: 1, borderTop: "2px solid #3b82f6" }}>
+        <div style={{ ...STYLES.card, flex: 1, borderTop: "2px solid #2563eb" }}>
           <div style={STYLES.cardTitle}>PRECIO/ROBOT/MES</div>
-          <div style={{ ...STYLES.statBig, color: "#3b82f6" }}>$13,000</div>
+          <div style={{ ...STYLES.statBig, color: "#2563eb" }}>$13,000</div>
           <div style={STYLES.statSub}>con contrato anual</div>
         </div>
       </div>
@@ -1783,7 +1784,7 @@ function RobotsTab() {
           <span>{robotsActivos}/{robotsTotal} robots</span>
         </div>
         <div style={STYLES.progressBarOuter}>
-          <div style={STYLES.progressBarInner(Math.round((robotsActivos / robotsTotal) * 100), "#22c55e")} />
+          <div style={STYLES.progressBarInner(Math.round((robotsActivos / robotsTotal) * 100), "#16a34a")} />
         </div>
       </div>
 
@@ -1793,19 +1794,19 @@ function RobotsTab() {
         const statusColor = STATUS_COLORS[robot.estado] || "#64748b";
         const isActive = robot.estado === "Desplegado";
         return (
-          <div key={i} style={{ ...STYLES.robotCard, borderColor: isActive ? "#22c55e40" : "#1e3a5f" }}>
+          <div key={i} style={{ ...STYLES.robotCard, borderColor: isActive ? "#16a34a40" : "#dbeafe" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ color: "#3b82f6", fontFamily: "monospace", fontSize: "12px", fontWeight: "700" }}>
+              <span style={{ color: "#2563eb", fontFamily: "monospace", fontSize: "12px", fontWeight: "700" }}>
                 #{String(i + 1).padStart(2, "0")}
               </span>
               <div>
-                <div style={{ color: "#e2e8f0", fontSize: "13px", fontWeight: "600" }}>{robot.nombre} · {robot.modelo}</div>
+                <div style={{ color: "#0f172a", fontSize: "13px", fontWeight: "600" }}>{robot.nombre} · {robot.modelo}</div>
                 <div style={{ color: "#475569", fontSize: "11px" }}>{robot.cliente || "Sin cliente asignado"}</div>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{ textAlign: "right" }}>
-                <div style={{ color: "#22c55e", fontSize: "12px", fontWeight: "700" }}>${(robot.precio || 13000).toLocaleString("es-MX")} MXN</div>
+                <div style={{ color: "#16a34a", fontSize: "12px", fontWeight: "700" }}>${(robot.precio || 13000).toLocaleString("es-MX")} MXN</div>
                 <div style={{ color: "#475569", fontSize: "10px" }}>con contrato</div>
               </div>
               <span style={{ background: `${statusColor}20`, border: `1px solid ${statusColor}`, color: statusColor, padding: "3px 9px", borderRadius: "4px", fontSize: "10px", fontWeight: "700", letterSpacing: "0.5px" }}>
@@ -1857,12 +1858,12 @@ function RobotsTab() {
           </div>
         </div>
         <div style={{
-          background: "#172033",
-          border: "1px solid #3b82f640",
+          background: "#eff6ff",
+          border: "1px solid #2563eb40",
           borderRadius: "6px",
           padding: "12px 16px",
           marginTop: "12px",
-          color: "#93c5fd",
+          color: "#2563eb",
           fontSize: "13px",
           fontStyle: "italic",
           textAlign: "center",
@@ -1887,12 +1888,12 @@ function SistemasTab() {
       <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
         <div style={{ ...STYLES.card, flex: 1, borderTop: "2px solid #ef4444" }}>
           <div style={STYLES.cardTitle}>COSTO TOTAL/MES</div>
-          <div style={{ ...STYLES.statBig, color: "#f87171", fontSize: "18px" }}>{totalCost}</div>
+          <div style={{ ...STYLES.statBig, color: "#dc2626", fontSize: "18px" }}>{totalCost}</div>
           <div style={STYLES.statSub}>infraestructura completa</div>
         </div>
-        <div style={{ ...STYLES.card, flex: 1, borderTop: "2px solid #22c55e" }}>
+        <div style={{ ...STYLES.card, flex: 1, borderTop: "2px solid #16a34a" }}>
           <div style={STYLES.cardTitle}>PLATAFORMAS ACTIVAS</div>
-          <div style={{ ...STYLES.statBig, color: "#22c55e" }}>10</div>
+          <div style={{ ...STYLES.statBig, color: "#16a34a" }}>10</div>
           <div style={STYLES.statSub}>todas operativas</div>
         </div>
         <div style={{ ...STYLES.card, flex: 1, borderTop: "2px solid #fbbf24" }}>
@@ -1921,7 +1922,7 @@ function SistemasTab() {
               <tr key={i} style={STYLES.credRow(i)}>
                 <td style={STYLES.td}>
                   <span style={STYLES.dot(cred.color)} />
-                  <span style={{ color: "#e2e8f0", fontWeight: "600" }}>{cred.platform}</span>
+                  <span style={{ color: "#0f172a", fontWeight: "600" }}>{cred.platform}</span>
                 </td>
                 <td style={STYLES.td}>{cred.user}</td>
                 <td style={STYLES.td}>
@@ -1967,7 +1968,7 @@ function SistemasTab() {
           "Reporte mensual de costos sin exposición de passwords",
         ].map((item, i) => (
           <div key={i} style={STYLES.checkItem}>
-            <span style={{ color: "#22c55e", fontSize: "14px" }}>✓</span>
+            <span style={{ color: "#16a34a", fontSize: "14px" }}>✓</span>
             <span>{item}</span>
           </div>
         ))}
@@ -2000,12 +2001,12 @@ const WF_META = {
   "07 TRACKER":       { agent: "TRACKER", icon: "📡", color: "#ef4444", layer: "SEGUIMIENTO" },
   "13 Nutrición":     { agent: "TRACKER", icon: "📡", color: "#ef4444", layer: "SEGUIMIENTO" },
   "NEXUS-RESCATE":    { agent: "TRACKER", icon: "📡", color: "#ef4444", layer: "SEGUIMIENTO" },
-  "06 Reporte":       { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
-  "15 Reporte":       { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
-  "18 Resumen":       { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
-  "08 Monitor":       { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
-  "17 Alerta":        { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
-  "METRICS API":      { agent: "ATLAS",   icon: "📊", color: "#3b82f6", layer: "REPORTES" },
+  "06 Reporte":       { agent: "ATLAS",   icon: "📊", color: "#2563eb", layer: "REPORTES" },
+  "15 Reporte":       { agent: "ATLAS",   icon: "📊", color: "#2563eb", layer: "REPORTES" },
+  "18 Resumen":       { agent: "ATLAS",   icon: "📊", color: "#2563eb", layer: "REPORTES" },
+  "08 Monitor":       { agent: "ATLAS",   icon: "📊", color: "#2563eb", layer: "REPORTES" },
+  "17 Alerta":        { agent: "ATLAS",   icon: "📊", color: "#2563eb", layer: "REPORTES" },
+  "METRICS API":      { agent: "ATLAS",   icon: "📊", color: "#2563eb", layer: "REPORTES" },
   "21 Score":         { agent: "ORACLE",  icon: "🔮", color: "#a855f7", layer: "INTELIGENCIA" },
   "22 Monitor Robots":{ agent: "ONYX",    icon: "⚙️", color: "#64748b", layer: "OPERACIONES" },
   "14 Onboarding":    { agent: "ONYX",    icon: "⚙️", color: "#64748b", layer: "OPERACIONES" },
@@ -2083,7 +2084,7 @@ function AgentMonitorTab() {
   const LAYERS = ["CEREBRO", "CAPTACION", "CONTACTO", "CIERRE", "SEGUIMIENTO", "REPORTES", "INTELIGENCIA", "OPERACIONES", "MARKETING", "OTROS"];
   const LAYER_COLORS = {
     CEREBRO: "#06b6d4", CAPTACION: "#f59e0b", CONTACTO: "#f97316",
-    CIERRE: "#8b5cf6", SEGUIMIENTO: "#ef4444", REPORTES: "#3b82f6",
+    CIERRE: "#8b5cf6", SEGUIMIENTO: "#ef4444", REPORTES: "#2563eb",
     INTELIGENCIA: "#a855f7", OPERACIONES: "#64748b", MARKETING: "#ec4899", OTROS: "#475569",
   };
 
@@ -2100,7 +2101,7 @@ function AgentMonitorTab() {
     grouped[layer].push({ ...a, meta });
   }
 
-  const statusColor = (s) => s === "success" ? "#22c55e" : s === "error" ? "#ef4444" : s === "never" ? "#f59e0b" : "#475569";
+  const statusColor = (s) => s === "success" ? "#16a34a" : s === "error" ? "#ef4444" : s === "never" ? "#f59e0b" : "#475569";
   const statusLabel = (s) => s === "success" ? "OK" : s === "error" ? "ERROR" : s === "never" ? "PENDIENTE" : "?";
 
   return (
@@ -2108,9 +2109,9 @@ function AgentMonitorTab() {
       {/* Summary Bar */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "12px", marginBottom: "20px" }}>
         {[
-          { label: "TOTAL WORKFLOWS", value: summary.total || 0, color: "#3b82f6" },
-          { label: "ACTIVOS", value: summary.active || 0, color: "#22c55e" },
-          { label: "SALUDABLES", value: summary.healthy || 0, color: "#22c55e" },
+          { label: "TOTAL WORKFLOWS", value: summary.total || 0, color: "#2563eb" },
+          { label: "ACTIVOS", value: summary.active || 0, color: "#16a34a" },
+          { label: "SALUDABLES", value: summary.healthy || 0, color: "#16a34a" },
           { label: "CON ERRORES", value: summary.withErrors || 0, color: "#ef4444" },
           { label: "PENDIENTES", value: summary.neverRun || 0, color: "#f59e0b" },
         ].map(s => (
@@ -2139,7 +2140,7 @@ function AgentMonitorTab() {
             <div key={i} style={{ color: "#334155", fontSize: "20px", margin: "0 4px" }}>{item.arrow}</div>
           ) : (
             <div key={i} style={{
-              background: "#0f172a", border: "1px solid " + item.color + "40",
+              background: "#ffffff", border: "1px solid " + item.color + "40",
               borderRadius: "8px", padding: "8px 14px", textAlign: "center", minWidth: "80px"
             }}>
               <div style={{ fontSize: "18px" }}>{item.icon}</div>
@@ -2157,12 +2158,12 @@ function AgentMonitorTab() {
             { arrow: "→" },
             { name: "SIGMA", icon: "📝", color: "#8b5cf6", desc: "Propuesta" },
             { arrow: "→" },
-            { name: "ATLAS", icon: "📊", color: "#3b82f6", desc: "Reporta" },
+            { name: "ATLAS", icon: "📊", color: "#2563eb", desc: "Reporta" },
           ].map((item, i) => item.arrow ? (
             <div key={i} style={{ color: "#334155", fontSize: "20px" }}>{item.arrow}</div>
           ) : (
             <div key={i} style={{
-              background: "#0f172a", border: "1px solid " + item.color + "40",
+              background: "#ffffff", border: "1px solid " + item.color + "40",
               borderRadius: "8px", padding: "8px 14px", textAlign: "center", minWidth: "80px"
             }}>
               <div style={{ fontSize: "18px" }}>{item.icon}</div>
@@ -2181,7 +2182,7 @@ function AgentMonitorTab() {
             <div key={i} style={{ color: "#334155", fontSize: "20px" }}>{item.arrow}</div>
           ) : (
             <div key={i} style={{
-              background: "#0f172a", border: "1px solid " + item.color + "40",
+              background: "#ffffff", border: "1px solid " + item.color + "40",
               borderRadius: "8px", padding: "8px 14px", textAlign: "center", minWidth: "80px"
             }}>
               <div style={{ fontSize: "18px" }}>{item.icon}</div>
@@ -2190,7 +2191,7 @@ function AgentMonitorTab() {
             </div>
           ))}
         </div>
-        <div style={{ marginTop: "12px", padding: "8px 12px", background: "#0f172a", borderRadius: "6px", display: "flex", gap: "20px", flexWrap: "wrap" }}>
+        <div style={{ marginTop: "12px", padding: "8px 12px", background: "#ffffff", borderRadius: "6px", display: "flex", gap: "20px", flexWrap: "wrap" }}>
           <span style={{ color: "#475569", fontSize: "10px" }}>🔒 AUTORIZACIÓN HUMANA REQUERIDA:</span>
           <span style={{ color: "#f59e0b", fontSize: "10px" }}>Propuestas &gt;$150k MXN</span>
           <span style={{ color: "#f59e0b", fontSize: "10px" }}>Deal ganado</span>
@@ -2207,9 +2208,9 @@ function AgentMonitorTab() {
           { id: "error", label: "✗ Errores (" + agents.filter(a => a.lastStatus === "error").length + ")" },
         ].map(f => (
           <button key={f.id} onClick={() => setFilter(f.id)} style={{
-            background: filter === f.id ? "#1e3a5f" : "transparent",
-            border: "1px solid " + (filter === f.id ? "#3b82f6" : "#1e3a5f"),
-            color: filter === f.id ? "#3b82f6" : "#475569",
+            background: filter === f.id ? "#dbeafe" : "transparent",
+            border: "1px solid " + (filter === f.id ? "#2563eb" : "#e2e8f0"),
+            color: filter === f.id ? "#2563eb" : "#475569",
             padding: "6px 14px", borderRadius: "6px", cursor: "pointer",
             fontSize: "11px", letterSpacing: "0.5px",
           }}>{f.label}</button>
@@ -2217,7 +2218,7 @@ function AgentMonitorTab() {
         <div style={{ marginLeft: "auto", color: "#334155", fontSize: "10px", paddingTop: "8px" }}>
           {lastUpdate ? "Actualizado " + timeAgo(lastUpdate.toISOString()) : "Cargando..."}
           <button onClick={fetchStatus} style={{
-            marginLeft: "8px", background: "transparent", border: "1px solid #1e3a5f",
+            marginLeft: "8px", background: "transparent", border: "1px solid #e2e8f0",
             color: "#475569", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "10px"
           }}>↺ Refresh</button>
         </div>
@@ -2232,7 +2233,7 @@ function AgentMonitorTab() {
           }}>
             <span style={{ display: "inline-block", width: "30px", height: "1px", background: LAYER_COLORS[layer] }}></span>
             {layer}
-            <span style={{ display: "inline-block", flex: 1, height: "1px", background: "#0f172a" }}></span>
+            <span style={{ display: "inline-block", flex: 1, height: "1px", background: "#ffffff" }}></span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "10px" }}>
             {grouped[layer].map(wf => {
@@ -2240,7 +2241,7 @@ function AgentMonitorTab() {
               const isRunning = runningAgents.has(wf.id);
               return (
                 <div key={wf.id} style={{
-                  background: "#0f172a",
+                  background: "#ffffff",
                   border: "1px solid " + sColor + "30",
                   borderLeft: "3px solid " + sColor,
                   borderRadius: "6px",
@@ -2269,7 +2270,7 @@ function AgentMonitorTab() {
                           {wf.lastRun ? timeAgo(wf.lastRun) : "Nunca ejecutado"}
                         </span>
                         {wf.totalRuns > 0 && (
-                          <span style={{ color: "#22c55e40", fontSize: "10px" }}>
+                          <span style={{ color: "#16a34a", fontSize: "10px" }}>
                             {wf.successCount}✓ {wf.errorCount > 0 ? wf.errorCount + "✗" : ""}
                           </span>
                         )}
@@ -2282,13 +2283,13 @@ function AgentMonitorTab() {
                         onClick={() => triggerAgent(wf.meta.agent, wf.id)}
                         title="Ejecutar ahora"
                         style={{
-                          background: "transparent", border: "1px solid #1e3a5f",
+                          background: "transparent", border: "1px solid #e2e8f0",
                           color: "#475569", padding: "4px 8px", borderRadius: "4px",
                           cursor: "pointer", fontSize: "11px",
                           transition: "all 0.2s", flexShrink: 0,
                         }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = wf.meta.color; e.currentTarget.style.color = wf.meta.color; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = "#1e3a5f"; e.currentTarget.style.color = "#475569"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "#dbeafe"; e.currentTarget.style.color = "#475569"; }}
                       >▶</button>
                     )}
                   </div>
@@ -2312,7 +2313,7 @@ const CHAT_AGENTS = [
   { id: "SIGMA",     name: "SIGMA",           role: "Contratos y cierres",              color: "#8b5cf6", icon: "📝" },
   { id: "MERCURY",   name: "MERCURY",         role: "WhatsApp y respuestas rápidas",    color: "#f97316", icon: "💬" },
   { id: "TRACKER",   name: "TRACKER",         role: "Seguimiento y follow-ups",         color: "#ef4444", icon: "📡" },
-  { id: "ATLAS",     name: "ATLAS",           role: "Reportes y métricas",              color: "#3b82f6", icon: "📊" },
+  { id: "ATLAS",     name: "ATLAS",           role: "Reportes y métricas",              color: "#2563eb", icon: "📊" },
   { id: "ORACLE",    name: "ORACLE",          role: "Estrategia e insights",            color: "#a855f7", icon: "🔮" },
   { id: "ONYX",      name: "ONYX",            role: "Operaciones y sistemas",           color: "#64748b", icon: "⚙️" },
 ];
@@ -2412,19 +2413,19 @@ function CommandCenterTab() {
   };
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 160px)", gap: "0", background: "#070d1a" }}>
+    <div style={{ display: "flex", height: "calc(100vh - 160px)", gap: "0", background: "#f8fafc" }}>
       {/* LEFT PANEL — Agent List */}
       <div style={{
         width: "260px",
-        borderRight: "1px solid #0f172a",
+        borderRight: "1px solid #e2e8f0",
         display: "flex",
         flexDirection: "column",
-        background: "#080f1e",
+        background: "#ffffff",
         flexShrink: 0,
       }}>
         <div style={{
           padding: "16px",
-          borderBottom: "1px solid #0f172a",
+          borderBottom: "1px solid #e2e8f0",
           fontSize: "10px",
           color: "#334155",
           letterSpacing: "1px",
@@ -2446,7 +2447,7 @@ function CommandCenterTab() {
                   gap: "12px",
                   padding: "12px 16px",
                   cursor: "pointer",
-                  background: isActive ? "#0f172a" : "transparent",
+                  background: isActive ? "#ffffff" : "transparent",
                   borderLeft: isActive ? `3px solid ${agent.color}` : "3px solid transparent",
                   transition: "all 0.15s",
                 }}
@@ -2469,7 +2470,7 @@ function CommandCenterTab() {
                   <div style={{
                     fontSize: "12px",
                     fontWeight: "700",
-                    color: isActive ? agent.color : "#94a3b8",
+                    color: isActive ? agent.color : "#334155",
                     letterSpacing: "0.5px",
                   }}>
                     {agent.name}
@@ -2501,7 +2502,7 @@ function CommandCenterTab() {
         </div>
 
         {/* Quick actions */}
-        <div style={{ padding: "12px", borderTop: "1px solid #0f172a" }}>
+        <div style={{ padding: "12px", borderTop: "1px solid #e2e8f0" }}>
           <div style={{ fontSize: "10px", color: "#334155", marginBottom: "8px", letterSpacing: "0.5px" }}>
             PREGUNTAS RÁPIDAS
           </div>
@@ -2520,8 +2521,8 @@ function CommandCenterTab() {
               onClick={() => { setInput(q); setTimeout(() => inputRef.current?.focus(), 50); }}
               style={{
                 padding: "6px 8px",
-                background: "#0f172a",
-                border: "1px solid #1e3a5f",
+                background: "#ffffff",
+                border: "1px solid #e2e8f0",
                 borderRadius: "6px",
                 fontSize: "10px",
                 color: "#64748b",
@@ -2543,11 +2544,11 @@ function CommandCenterTab() {
         {/* Chat Header */}
         <div style={{
           padding: "14px 20px",
-          borderBottom: "1px solid #0f172a",
+          borderBottom: "1px solid #e2e8f0",
           display: "flex",
           alignItems: "center",
           gap: "12px",
-          background: "#080f1e",
+          background: "#ffffff",
         }}>
           <div style={{
             width: "40px",
@@ -2571,8 +2572,8 @@ function CommandCenterTab() {
             </div>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "6px" }}>
-            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px #22c55e" }} />
-            <span style={{ fontSize: "10px", color: "#22c55e" }}>ACTIVO</span>
+            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#16a34a", boxShadow: "0 0 6px #16a34a" }} />
+            <span style={{ fontSize: "10px", color: "#16a34a" }}>ACTIVO</span>
           </div>
         </div>
 
@@ -2624,20 +2625,20 @@ function CommandCenterTab() {
                   padding: "10px 14px",
                   borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
                   background: msg.role === "user"
-                    ? "#1e3a5f"
-                    : msg.error ? "#1a0a0a" : "#0f172a",
+                    ? "#2563eb"
+                    : msg.error ? "#fff1f2" : "#ffffff",
                   border: msg.role === "user"
-                    ? "1px solid #2563eb40"
-                    : msg.error ? "1px solid #ef444440" : "1px solid #1e293b",
+                    ? "1px solid #2563eb"
+                    : msg.error ? "1px solid #ef444440" : "1px solid #e2e8f0",
                   fontSize: "13px",
-                  color: msg.error ? "#f87171" : "#cbd5e1",
+                  color: msg.role === "user" ? "#ffffff" : msg.error ? "#dc2626" : "#334155",
                   lineHeight: "1.5",
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
                 }}>
                   {msg.text}
                 </div>
-                <span style={{ fontSize: "10px", color: "#1e3a5f" }}>{formatTime(msg.timestamp)}</span>
+                <span style={{ fontSize: "10px", color: "#94a3b8" }}>{formatTime(msg.timestamp)}</span>
               </div>
             </div>
           ))}
@@ -2661,8 +2662,8 @@ function CommandCenterTab() {
               <div style={{
                 padding: "12px 16px",
                 borderRadius: "16px 16px 16px 4px",
-                background: "#0f172a",
-                border: "1px solid #1e293b",
+                background: "#ffffff",
+                border: "1px solid #e2e8f0",
                 display: "flex",
                 gap: "4px",
                 alignItems: "center",
@@ -2687,8 +2688,8 @@ function CommandCenterTab() {
         {/* Input */}
         <div style={{
           padding: "16px 20px",
-          borderTop: "1px solid #0f172a",
-          background: "#080f1e",
+          borderTop: "1px solid #e2e8f0",
+          background: "#ffffff",
           display: "flex",
           gap: "10px",
           alignItems: "flex-end",
@@ -2702,11 +2703,11 @@ function CommandCenterTab() {
             rows={1}
             style={{
               flex: 1,
-              background: "#0f172a",
-              border: "1px solid #1e3a5f",
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
               borderRadius: "12px",
               padding: "10px 14px",
-              color: "#cbd5e1",
+              color: "#334155",
               fontSize: "13px",
               outline: "none",
               resize: "none",
@@ -2727,8 +2728,8 @@ function CommandCenterTab() {
               width: "40px",
               height: "40px",
               borderRadius: "50%",
-              background: !input.trim() || isTyping ? "#0f172a" : selectedAgent.color,
-              border: `1px solid ${!input.trim() || isTyping ? "#1e293b" : selectedAgent.color}`,
+              background: !input.trim() || isTyping ? "#ffffff" : selectedAgent.color,
+              border: `1px solid ${!input.trim() || isTyping ? "#e2e8f0" : selectedAgent.color}`,
               color: !input.trim() || isTyping ? "#334155" : "#000",
               cursor: !input.trim() || isTyping ? "not-allowed" : "pointer",
               display: "flex",
@@ -2802,19 +2803,19 @@ const PIPELINE_STAGES = [
   { id: "scoring",        label: "Calificando",     color: "#6366f1", icon: "🧠" },
   { id: "wa_queued",      label: "WA Programado",   color: "#f59e0b", icon: "📱" },
   { id: "email_queued",   label: "Email Programado",color: "#f59e0b", icon: "📧" },
-  { id: "wa_sent",        label: "Contactado",      color: "#3b82f6", icon: "✉️" },
-  { id: "email_sent",     label: "Email Enviado",   color: "#3b82f6", icon: "📨" },
+  { id: "wa_sent",        label: "Contactado",      color: "#2563eb", icon: "✉️" },
+  { id: "email_sent",     label: "Email Enviado",   color: "#2563eb", icon: "📨" },
   { id: "replied",        label: "Respondió",       color: "#10b981", icon: "💬" },
   { id: "wa_replied",     label: "Respondió WA",    color: "#10b981", icon: "💬" },
   { id: "email_opened",   label: "Abrió Email",     color: "#06b6d4", icon: "👁" },
   { id: "proposal_sent",  label: "Propuesta",       color: "#8b5cf6", icon: "📋" },
   { id: "meeting_scheduled","label":"Demo Agendada",color: "#a855f7", icon: "📅" },
-  { id: "won",            label: "Ganados",         color: "#22c55e", icon: "🏆" },
+  { id: "won",            label: "Ganados",         color: "#16a34a", icon: "🏆" },
   { id: "paused",         label: "En Pausa",        color: "#475569", icon: "⏸" },
   { id: "rescate",        label: "Rescate",         color: "#f97316", icon: "🚨" },
 ];
 
-const TEMP_COLORS = { hot: "#ef4444", warm: "#f59e0b", cold: "#3b82f6", HOT: "#ef4444", WARM: "#f59e0b", COLD: "#3b82f6" };
+const TEMP_COLORS = { hot: "#ef4444", warm: "#f59e0b", cold: "#2563eb", HOT: "#ef4444", WARM: "#f59e0b", COLD: "#2563eb" };
 const TEMP_LABELS = { hot: "🔴 HOT", warm: "🟡 WARM", cold: "🔵 COLD", HOT: "🔴 HOT", WARM: "🟡 WARM", COLD: "🔵 COLD" };
 
 function LeadCard({ lead, onTrigger }) {
@@ -2828,7 +2829,7 @@ function LeadCard({ lead, onTrigger }) {
 
   return (
     <div style={{
-      background: "#0f172a",
+      background: "#ffffff",
       border: `1px solid ${urgente ? "#ef4444" : color + "40"}`,
       borderLeft: `3px solid ${color}`,
       borderRadius: "6px",
@@ -2838,7 +2839,7 @@ function LeadCard({ lead, onTrigger }) {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: "700", color: "#e2e8f0", fontSize: "13px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontWeight: "700", color: "#0f172a", fontSize: "13px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {f.Empresa || f.Name || "—"}
             {f.Es_VIP && <span style={{ marginLeft: "4px", color: "#f59e0b", fontSize: "11px" }}>★VIP</span>}
           </div>
@@ -2855,12 +2856,12 @@ function LeadCard({ lead, onTrigger }) {
       </div>
       <div style={{ marginTop: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-          {robot && <span style={{ background: "#1e293b", color: "#94a3b8", borderRadius: "3px", padding: "1px 5px", fontSize: "10px" }}>{robot}</span>}
-          {f.Tipo_Negocio && <span style={{ background: "#1e3a5f", color: "#60a5fa", borderRadius: "3px", padding: "1px 5px", fontSize: "10px" }}>{f.Tipo_Negocio.replace("A-","").replace("B-","")}</span>}
+          {robot && <span style={{ background: "#f1f5f9", color: "#64748b", borderRadius: "3px", padding: "1px 5px", fontSize: "10px" }}>{robot}</span>}
+          {f.Tipo_Negocio && <span style={{ background: "#dbeafe", color: "#2563eb", borderRadius: "3px", padding: "1px 5px", fontSize: "10px" }}>{f.Tipo_Negocio.replace("A-","").replace("B-","")}</span>}
         </div>
         <div style={{ display: "flex", gap: "4px" }}>
-          {f.Email && <button onClick={() => onTrigger("email", lead.id, f)} style={{ background: "#10b98120", border: "1px solid #10b98140", color: "#34d399", borderRadius: "3px", padding: "2px 6px", fontSize: "10px", cursor: "pointer" }}>📧</button>}
-          {(f.Telefono || f["Teléfono"]) && <button onClick={() => onTrigger("wa", lead.id, f)} style={{ background: "#22c55e20", border: "1px solid #22c55e40", color: "#4ade80", borderRadius: "3px", padding: "2px 6px", fontSize: "10px", cursor: "pointer" }}>💬</button>}
+          {f.Email && <button onClick={() => onTrigger("email", lead.id, f)} style={{ background: "#dcfce7", border: "1px solid #10b98160", color: "#059669", borderRadius: "3px", padding: "2px 6px", fontSize: "10px", cursor: "pointer" }}>📧</button>}
+          {(f.Telefono || f["Teléfono"]) && <button onClick={() => onTrigger("wa", lead.id, f)} style={{ background: "#dcfce7", border: "1px solid #16a34a40", color: "#16a34a", borderRadius: "3px", padding: "2px 6px", fontSize: "10px", cursor: "pointer" }}>💬</button>}
         </div>
       </div>
       {f.Ultimo_Evento && (
@@ -2933,14 +2934,14 @@ function PipelineTab() {
       {/* Top KPIs */}
       <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
         {[
-          { label: "TOTAL LEADS", value: leads.length, color: "#3b82f6" },
+          { label: "TOTAL LEADS", value: leads.length, color: "#2563eb" },
           { label: "🔴 HOT", value: totalHot, color: "#ef4444" },
           { label: "🟡 WARM", value: totalWarm, color: "#f59e0b" },
-          { label: "🏆 GANADOS", value: totalWon, color: "#22c55e" },
+          { label: "🏆 GANADOS", value: totalWon, color: "#16a34a" },
           { label: "HOY", value: followupHoy, color: "#a855f7", sub: "seguimientos" },
-          { label: "ATASCADOS", value: atascados, color: atascados > 0 ? "#ef4444" : "#22c55e", sub: ">7 días" },
+          { label: "ATASCADOS", value: atascados, color: atascados > 0 ? "#ef4444" : "#16a34a", sub: ">7 días" },
         ].map(k => (
-          <div key={k.label} style={{ background: "#0f172a", border: `1px solid ${k.color}30`, borderRadius: "8px", padding: "12px 18px", flex: "1", minWidth: "120px" }}>
+          <div key={k.label} style={{ background: "#ffffff", border: `1px solid ${k.color}30`, borderRadius: "8px", padding: "12px 18px", flex: "1", minWidth: "120px" }}>
             <div style={{ color: "#475569", fontSize: "10px", letterSpacing: "1px" }}>{k.label}</div>
             <div style={{ color: k.color, fontSize: "28px", fontWeight: "700", lineHeight: "1" }}>{k.value}</div>
             {k.sub && <div style={{ color: "#475569", fontSize: "10px" }}>{k.sub}</div>}
@@ -2953,24 +2954,24 @@ function PipelineTab() {
         <input
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Buscar empresa o contacto..."
-          style={{ background: "#0f172a", border: "1px solid #1e3a5f", color: "#e2e8f0", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", flex: "1", minWidth: "200px" }}
+          style={{ background: "#ffffff", border: "1px solid #e2e8f0", color: "#0f172a", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", flex: "1", minWidth: "200px" }}
         />
         {["all","hot","warm","cold","vip"].map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{
-            background: filter === f ? "#3b82f6" : "#0f172a",
-            border: "1px solid " + (filter === f ? "#3b82f6" : "#1e3a5f"),
+            background: filter === f ? "#2563eb" : "#ffffff",
+            border: "1px solid " + (filter === f ? "#2563eb" : "#e2e8f0"),
             color: filter === f ? "#fff" : "#64748b",
             borderRadius: "6px", padding: "6px 12px", fontSize: "11px", cursor: "pointer",
           }}>{f === "all" ? "Todos" : f === "vip" ? "★ VIP" : f.toUpperCase()}</button>
         ))}
         {["kanban","table"].map(v => (
           <button key={v} onClick={() => setView(v)} style={{
-            background: view === v ? "#1e293b" : "#0f172a",
-            border: "1px solid #1e3a5f", color: view === v ? "#e2e8f0" : "#475569",
+            background: view === v ? "#f1f5f9" : "#ffffff",
+            border: "1px solid #e2e8f0", color: view === v ? "#0f172a" : "#475569",
             borderRadius: "6px", padding: "6px 10px", fontSize: "11px", cursor: "pointer",
           }}>{v === "kanban" ? "🗂 Kanban" : "📋 Tabla"}</button>
         ))}
-        <button onClick={refresh} style={{ background: "#0f172a", border: "1px solid #1e3a5f", color: "#3b82f6", borderRadius: "6px", padding: "6px 10px", fontSize: "11px", cursor: "pointer" }}>↺ Actualizar</button>
+        <button onClick={refresh} style={{ background: "#ffffff", border: "1px solid #e2e8f0", color: "#2563eb", borderRadius: "6px", padding: "6px 10px", fontSize: "11px", cursor: "pointer" }}>↺ Actualizar</button>
       </div>
 
       {loading ? (
@@ -2989,9 +2990,9 @@ function PipelineTab() {
                     {stageLeads.length}
                   </span>
                 </div>
-                <div style={{ background: "#080d1a", borderRadius: "8px", padding: "8px", minHeight: "80px", border: `1px solid ${stage.color}15` }}>
+                <div style={{ background: "#f8fafc", borderRadius: "8px", padding: "8px", minHeight: "80px", border: `1px solid ${stage.color}15` }}>
                   {stageLeads.length === 0
-                    ? <div style={{ color: "#1e293b", fontSize: "11px", textAlign: "center", padding: "20px 0" }}>—</div>
+                    ? <div style={{ color: "#0f172a", fontSize: "11px", textAlign: "center", padding: "20px 0" }}>—</div>
                     : stageLeads.sort((a,b) => (b.fields?.Score_IA||0) - (a.fields?.Score_IA||0)).map(lead => (
                         <LeadCard key={lead.id} lead={lead} onTrigger={triggerAgent} />
                       ))
@@ -3017,11 +3018,11 @@ function PipelineTab() {
                 const temp = f.Clasificacion || f.Temperatura || "cold";
                 const tc = TEMP_COLORS[temp] || "#64748b";
                 return (
-                  <tr key={lead.id} style={{ borderBottom: "1px solid #0f172a" }}>
-                    <td style={{ padding: "7px 10px", color: "#e2e8f0", fontWeight: "600" }}>{f.Empresa||"—"}{f.Es_VIP&&<span style={{color:"#f59e0b",marginLeft:"4px"}}>★</span>}</td>
+                  <tr key={lead.id} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                    <td style={{ padding: "7px 10px", color: "#0f172a", fontWeight: "600" }}>{f.Empresa||"—"}{f.Es_VIP&&<span style={{color:"#f59e0b",marginLeft:"4px"}}>★</span>}</td>
                     <td style={{ padding: "7px 10px", color: "#94a3b8" }}>{(f.Name||"").split(" ")[0]||"—"}</td>
                     <td style={{ padding: "7px 10px", color: "#64748b" }}>{f.Sector||"—"}</td>
-                    <td style={{ padding: "7px 10px", color: "#60a5fa", fontSize: "11px" }}>{(f.Robot_Recomendado||"—").replace(" Limpieza","").replace(" Delivery","")}</td>
+                    <td style={{ padding: "7px 10px", color: "#2563eb", fontSize: "11px" }}>{(f.Robot_Recomendado||"—").replace(" Limpieza","").replace(" Delivery","")}</td>
                     <td style={{ padding: "7px 10px" }}><span style={{ color: tc, fontWeight: "700" }}>{f.Score_IA||"—"}</span></td>
                     <td style={{ padding: "7px 10px", color: "#94a3b8", fontSize: "11px" }}>{f.Workflow_State||"—"}</td>
                     <td style={{ padding: "7px 10px" }}><span style={{ color: tc, fontSize: "11px", fontWeight: "700" }}>{TEMP_LABELS[temp]||"—"}</span></td>
@@ -3072,7 +3073,7 @@ function AgentTeamMapTab() {
       outputs: ["MERCURY","HERMES","MORNING"],
     },
     {
-      id: "MERCURY", name: "MERCURY", icon: "💬", color: "#22c55e",
+      id: "MERCURY", name: "MERCURY", icon: "💬", color: "#16a34a",
       role: "WhatsApp + Cadencias", schedule: "Cada hora",
       desc: "Cadencia A (activaciones, 3 días) y B (corporativos, 90 días). Template primer contacto. Follow-ups personalizados con Claude.",
       stats: [`${waSent} WA enviados`, "Cadencia A: 3 días | B: 90 días"],
@@ -3081,7 +3082,7 @@ function AgentTeamMapTab() {
       outputs: ["ATLAS","NEXUS"],
     },
     {
-      id: "HERMES", name: "HERMES", icon: "📧", color: "#3b82f6",
+      id: "HERMES", name: "HERMES", icon: "📧", color: "#2563eb",
       role: "Email Outreach", schedule: "Webhook (ZEUS)",
       desc: "Emails personalizados con Claude por industria. Calcula ROI específico. Casos de éxito por sector. Requiere DNS botmate.mx (lunes).",
       stats: [`${emailSent} emails enviados`, "ROI calc automático"],
@@ -3123,16 +3124,16 @@ function AgentTeamMapTab() {
   return (
     <div style={{ padding: "20px", height: "calc(100vh - 120px)", overflowY: "auto" }}>
       <div style={{ marginBottom: "20px" }}>
-        <div style={{ color: "#e2e8f0", fontSize: "16px", fontWeight: "700", letterSpacing: "1px" }}>EQUIPO DE AGENTES — FLUJO DE VENTAS</div>
+        <div style={{ color: "#0f172a", fontSize: "16px", fontWeight: "700", letterSpacing: "1px" }}>EQUIPO DE AGENTES — FLUJO DE VENTAS</div>
         <div style={{ color: "#475569", fontSize: "12px", marginTop: "4px" }}>Click en un agente para ver detalles. Los agentes trabajan 24/7 en Railway.</div>
       </div>
 
       {/* Flow diagram */}
-      <div style={{ background: "#0a0f1e", border: "1px solid #1e293b", borderRadius: "12px", padding: "24px", marginBottom: "20px", overflowX: "auto" }}>
+      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px", marginBottom: "20px", overflowX: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0", minWidth: "800px" }}>
           {/* APOLO */}
           <div onClick={() => setSelected("APOLO")} style={{ cursor: "pointer", textAlign: "center", flex: "1" }}>
-            <div style={{ background: "#f59e0b15", border: `2px solid ${selected==="APOLO"?"#f59e0b":"#f59e0b40"}`, borderRadius: "12px", padding: "16px 12px" }}>
+            <div style={{ background: "#fffbeb", border: `2px solid ${selected==="APOLO"?"#f59e0b":"#f59e0b40"}`, borderRadius: "12px", padding: "16px 12px" }}>
               <div style={{ fontSize: "28px" }}>🎯</div>
               <div style={{ color: "#f59e0b", fontWeight: "700", fontSize: "13px", marginTop: "4px" }}>APOLO</div>
               <div style={{ color: "#64748b", fontSize: "10px" }}>Prospección</div>
@@ -3140,10 +3141,10 @@ function AgentTeamMapTab() {
             </div>
           </div>
           {/* Arrow */}
-          <div style={{ color: "#1e3a5f", fontSize: "20px", padding: "0 8px" }}>→</div>
+          <div style={{ color: "#94a3b8", fontSize: "20px", padding: "0 8px" }}>→</div>
           {/* ZEUS */}
           <div onClick={() => setSelected("ZEUS")} style={{ cursor: "pointer", textAlign: "center", flex: "1" }}>
-            <div style={{ background: "#6366f115", border: `2px solid ${selected==="ZEUS"?"#6366f1":"#6366f140"}`, borderRadius: "12px", padding: "16px 12px" }}>
+            <div style={{ background: "#eef2ff", border: `2px solid ${selected==="ZEUS"?"#6366f1":"#6366f140"}`, borderRadius: "12px", padding: "16px 12px" }}>
               <div style={{ fontSize: "28px" }}>🧠</div>
               <div style={{ color: "#6366f1", fontWeight: "700", fontSize: "13px", marginTop: "4px" }}>ZEUS</div>
               <div style={{ color: "#64748b", fontSize: "10px" }}>Scoring + Routing</div>
@@ -3152,45 +3153,45 @@ function AgentTeamMapTab() {
           </div>
           {/* Double arrow to MERCURY + HERMES */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 8px", gap: "8px" }}>
-            <div style={{ color: "#22c55e", fontSize: "14px" }}>→ WA</div>
-            <div style={{ color: "#3b82f6", fontSize: "14px" }}>→ Email</div>
+            <div style={{ color: "#16a34a", fontSize: "14px" }}>→ WA</div>
+            <div style={{ color: "#2563eb", fontSize: "14px" }}>→ Email</div>
           </div>
           {/* MERCURY + HERMES stacked */}
           <div style={{ flex: "1", display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div onClick={() => setSelected("MERCURY")} style={{ cursor: "pointer", background: "#22c55e15", border: `2px solid ${selected==="MERCURY"?"#22c55e":"#22c55e40"}`, borderRadius: "10px", padding: "10px 12px", display: "flex", alignItems: "center", gap: "10px" }}>
+            <div onClick={() => setSelected("MERCURY")} style={{ cursor: "pointer", background: "#f0fdf4", border: `2px solid ${selected==="MERCURY"?"#16a34a":"#16a34a40"}`, borderRadius: "10px", padding: "10px 12px", display: "flex", alignItems: "center", gap: "10px" }}>
               <span style={{ fontSize: "20px" }}>💬</span>
               <div>
-                <div style={{ color: "#22c55e", fontWeight: "700", fontSize: "12px" }}>MERCURY</div>
+                <div style={{ color: "#16a34a", fontWeight: "700", fontSize: "12px" }}>MERCURY</div>
                 <div style={{ color: "#64748b", fontSize: "10px" }}>WhatsApp · {waSent} enviados</div>
               </div>
             </div>
-            <div onClick={() => setSelected("HERMES")} style={{ cursor: "pointer", background: "#3b82f615", border: `2px solid ${selected==="HERMES"?"#3b82f6":"#3b82f640"}`, borderRadius: "10px", padding: "10px 12px", display: "flex", alignItems: "center", gap: "10px" }}>
+            <div onClick={() => setSelected("HERMES")} style={{ cursor: "pointer", background: "#eff6ff", border: `2px solid ${selected==="HERMES"?"#2563eb":"#2563eb40"}`, borderRadius: "10px", padding: "10px 12px", display: "flex", alignItems: "center", gap: "10px" }}>
               <span style={{ fontSize: "20px" }}>📧</span>
               <div>
-                <div style={{ color: "#3b82f6", fontWeight: "700", fontSize: "12px" }}>HERMES</div>
+                <div style={{ color: "#2563eb", fontWeight: "700", fontSize: "12px" }}>HERMES</div>
                 <div style={{ color: "#64748b", fontSize: "10px" }}>Email · {emailSent} enviados</div>
               </div>
             </div>
           </div>
-          <div style={{ color: "#1e3a5f", fontSize: "20px", padding: "0 8px" }}>→</div>
+          <div style={{ color: "#94a3b8", fontSize: "20px", padding: "0 8px" }}>→</div>
           {/* ATLAS */}
           <div onClick={() => setSelected("ATLAS")} style={{ cursor: "pointer", textAlign: "center", flex: "1" }}>
-            <div style={{ background: "#a855f715", border: `2px solid ${selected==="ATLAS"?"#a855f7":"#a855f740"}`, borderRadius: "12px", padding: "16px 12px" }}>
+            <div style={{ background: "#faf5ff", border: `2px solid ${selected==="ATLAS"?"#a855f7":"#a855f740"}`, borderRadius: "12px", padding: "16px 12px" }}>
               <div style={{ fontSize: "28px" }}>📋</div>
               <div style={{ color: "#a855f7", fontWeight: "700", fontSize: "13px", marginTop: "4px" }}>ATLAS</div>
               <div style={{ color: "#64748b", fontSize: "10px" }}>Propuestas</div>
               <div style={{ color: "#a855f7", fontSize: "11px", marginTop: "4px" }}>{proposals} activas</div>
             </div>
           </div>
-          <div style={{ color: "#1e3a5f", fontSize: "20px", padding: "0 8px" }}>→</div>
+          <div style={{ color: "#94a3b8", fontSize: "20px", padding: "0 8px" }}>→</div>
           {/* WIN + ARES */}
           <div style={{ flex: "1", display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div style={{ background: "#22c55e15", border: "2px solid #22c55e40", borderRadius: "10px", padding: "10px 12px", textAlign: "center" }}>
+            <div style={{ background: "#f0fdf4", border: "2px solid #16a34a40", borderRadius: "10px", padding: "10px 12px", textAlign: "center" }}>
               <div style={{ fontSize: "20px" }}>🏆</div>
-              <div style={{ color: "#22c55e", fontWeight: "700", fontSize: "12px" }}>GANADOS</div>
-              <div style={{ color: "#22c55e", fontSize: "20px", fontWeight: "700" }}>{won}</div>
+              <div style={{ color: "#16a34a", fontWeight: "700", fontSize: "12px" }}>GANADOS</div>
+              <div style={{ color: "#16a34a", fontSize: "20px", fontWeight: "700" }}>{won}</div>
             </div>
-            <div onClick={() => setSelected("ARES")} style={{ cursor: "pointer", background: "#f9731615", border: `2px solid ${selected==="ARES"?"#f97316":"#f9731640"}`, borderRadius: "10px", padding: "10px 12px", display: "flex", alignItems: "center", gap: "10px" }}>
+            <div onClick={() => setSelected("ARES")} style={{ cursor: "pointer", background: "#fff7ed", border: `2px solid ${selected==="ARES"?"#f97316":"#f9731640"}`, borderRadius: "10px", padding: "10px 12px", display: "flex", alignItems: "center", gap: "10px" }}>
               <span style={{ fontSize: "20px" }}>🤝</span>
               <div>
                 <div style={{ color: "#f97316", fontWeight: "700", fontSize: "12px" }}>ARES</div>
@@ -3203,7 +3204,7 @@ function AgentTeamMapTab() {
 
       {/* Agent detail card */}
       {sel && (
-        <div style={{ background: "#0f172a", border: `1px solid ${sel.color}40`, borderRadius: "12px", padding: "20px", marginBottom: "20px" }}>
+        <div style={{ background: "#ffffff", border: `1px solid ${sel.color}40`, borderRadius: "12px", padding: "20px", marginBottom: "20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
               <span style={{ fontSize: "36px" }}>{sel.icon}</span>
@@ -3213,25 +3214,25 @@ function AgentTeamMapTab() {
               </div>
             </div>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <span style={{ background: "#22c55e20", color: "#22c55e", border: "1px solid #22c55e40", borderRadius: "6px", padding: "4px 10px", fontSize: "11px" }}>{sel.status}</span>
+              <span style={{ background: "#dcfce7", color: "#16a34a", border: "1px solid #16a34a40", borderRadius: "6px", padding: "4px 10px", fontSize: "11px" }}>{sel.status}</span>
               <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", color: "#475569", cursor: "pointer", fontSize: "18px" }}>×</button>
             </div>
           </div>
           <p style={{ color: "#94a3b8", fontSize: "13px", lineHeight: "1.6", marginBottom: "16px" }}>{sel.desc}</p>
           <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
             {sel.stats.map(s => (
-              <div key={s} style={{ background: "#0a0f1e", border: `1px solid ${sel.color}20`, borderRadius: "6px", padding: "8px 14px" }}>
+              <div key={s} style={{ background: "#f1f5f9", border: `1px solid ${sel.color}20`, borderRadius: "6px", padding: "8px 14px" }}>
                 <span style={{ color: sel.color, fontSize: "12px", fontWeight: "600" }}>{s}</span>
               </div>
             ))}
             {sel.inputs && sel.inputs.length > 0 && (
-              <div style={{ background: "#0a0f1e", border: "1px solid #1e293b", borderRadius: "6px", padding: "8px 14px" }}>
+              <div style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "8px 14px" }}>
                 <span style={{ color: "#475569", fontSize: "11px" }}>Recibe de: </span>
                 <span style={{ color: "#94a3b8", fontSize: "12px" }}>{sel.inputs.join(", ")}</span>
               </div>
             )}
             {sel.outputs && sel.outputs.length > 0 && (
-              <div style={{ background: "#0a0f1e", border: "1px solid #1e293b", borderRadius: "6px", padding: "8px 14px" }}>
+              <div style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "8px 14px" }}>
                 <span style={{ color: "#475569", fontSize: "11px" }}>Envía a: </span>
                 <span style={{ color: "#94a3b8", fontSize: "12px" }}>{sel.outputs.join(", ")}</span>
               </div>
@@ -3242,7 +3243,7 @@ function AgentTeamMapTab() {
 
       {/* Cadence reference */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-        <div style={{ background: "#0f172a", border: "1px solid #f59e0b30", borderRadius: "10px", padding: "16px" }}>
+        <div style={{ background: "#ffffff", border: "1px solid #f59e0b30", borderRadius: "10px", padding: "16px" }}>
           <div style={{ color: "#f59e0b", fontWeight: "700", marginBottom: "12px", fontSize: "13px" }}>CADENCIA A — ACTIVACIONES</div>
           {[
             { d: "H0", t: "WA template intro", canal: "💬" },
@@ -3251,14 +3252,14 @@ function AgentTeamMapTab() {
             { d: "D3", t: "⚡ IVÁN interviene directamente", canal: "👤" },
           ].map(s => (
             <div key={s.d} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "6px", fontSize: "12px" }}>
-              <span style={{ background: "#f59e0b20", color: "#f59e0b", borderRadius: "4px", padding: "1px 6px", fontSize: "10px", minWidth: "28px", textAlign: "center" }}>{s.d}</span>
+              <span style={{ background: "#fef3c7", color: "#f59e0b", borderRadius: "4px", padding: "1px 6px", fontSize: "10px", minWidth: "28px", textAlign: "center" }}>{s.d}</span>
               <span style={{ color: "#64748b" }}>{s.canal}</span>
               <span style={{ color: "#94a3b8" }}>{s.t}</span>
             </div>
           ))}
         </div>
-        <div style={{ background: "#0f172a", border: "1px solid #3b82f630", borderRadius: "10px", padding: "16px" }}>
-          <div style={{ color: "#3b82f6", fontWeight: "700", marginBottom: "12px", fontSize: "13px" }}>CADENCIA B — CORPORATIVO</div>
+        <div style={{ background: "#ffffff", border: "1px solid #2563eb30", borderRadius: "10px", padding: "16px" }}>
+          <div style={{ color: "#2563eb", fontWeight: "700", marginBottom: "12px", fontSize: "13px" }}>CADENCIA B — CORPORATIVO</div>
           {[
             { d: "D0", t: "WA template intro breve", canal: "💬" },
             { d: "D2", t: "Email propuesta formal + ROI", canal: "📧" },
@@ -3270,7 +3271,7 @@ function AgentTeamMapTab() {
             { d: "D90", t: "WA último intento → nurturing", canal: "💬" },
           ].map(s => (
             <div key={s.d+s.t} style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "6px", fontSize: "12px" }}>
-              <span style={{ background: "#3b82f620", color: "#3b82f6", borderRadius: "4px", padding: "1px 6px", fontSize: "10px", minWidth: "28px", textAlign: "center" }}>{s.d}</span>
+              <span style={{ background: "#dbeafe", color: "#2563eb", borderRadius: "4px", padding: "1px 6px", fontSize: "10px", minWidth: "28px", textAlign: "center" }}>{s.d}</span>
               <span style={{ color: "#64748b" }}>{s.canal}</span>
               <span style={{ color: "#94a3b8" }}>{s.t}</span>
             </div>
@@ -3331,12 +3332,12 @@ export default function WarRoom() {
         </div>
         <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
           {hotCount > 0 && (
-            <span style={{ ...STYLES.badge, background: "#ef444420", border: "1px solid #ef4444", color: "#f87171" }}>
+            <span style={{ ...STYLES.badge, background: "#fee2e2", border: "1px solid #ef4444", color: "#dc2626" }}>
               🔴 {hotCount} HOT
             </span>
           )}
           {followupHoy > 0 && (
-            <span style={{ ...STYLES.badge, background: "#f59e0b20", border: "1px solid #f59e0b", color: "#fbbf24" }}>
+            <span style={{ ...STYLES.badge, background: "#fffbeb", border: "1px solid #f59e0b", color: "#d97706" }}>
               ⚡ {followupHoy} HOY
             </span>
           )}
@@ -3354,8 +3355,8 @@ export default function WarRoom() {
             {tab.label}
             {tab.id === "robots" && (
               <span style={{
-                background: "#ef444430",
-                color: "#f87171",
+                background: "#fee2e2",
+                color: "#dc2626",
                 border: "1px solid #ef4444",
                 borderRadius: "10px",
                 padding: "1px 6px",
@@ -3373,11 +3374,11 @@ export default function WarRoom() {
       <div style={STYLES.content}>{renderTab()}</div>
 
       <div style={{
-        borderTop: "1px solid #0f172a",
+        borderTop: "1px solid #e2e8f0",
         padding: "12px 24px",
         display: "flex",
         justifyContent: "space-between",
-        color: "#1e3a5f",
+        color: "#94a3b8",
         fontSize: "10px",
         letterSpacing: "0.5px",
       }}>
