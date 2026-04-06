@@ -2861,7 +2861,7 @@ function useLeads() {
 
   const fetchLeads = useCallback(async () => {
     try {
-      const fields = ["Name","Empresa","Cargo","Sector","Email","Telefono","Score_IA","Clasificacion","Temperatura","Tipo_Negocio","Robot_Recomendado","Workflow_State","Cadencia_Estado","Cadencia_Dia","Fecha_Seguimiento","Ultimo_Contacto","Es_VIP","Agente_Actual","Ultimo_Evento","WhatsApp_Enviados","Emails_Enviados"];
+      const fields = ["Name","Empresa","Cargo","Sector","Email","Telefono","Score_IA","Clasificacion","Temperatura","Tipo_Negocio","Robot_Recomendado","Workflow_State","Cadencia_Estado","Cadencia_Dia","Fecha_Seguimiento","Es_VIP","Agente_Actual","Ultimo_Evento","WhatsApp_Enviados","Emails_Enviados"];
       const qs = fields.map(f=>`fields[]=${encodeURIComponent(f)}`).join("&");
       const res = await fetch(
         `https://api.airtable.com/v0/${AIRTABLE_BASE}/tblO571b5ojGbLHnX?maxRecords=200&${qs}`,
@@ -3025,7 +3025,7 @@ function PipelineTab() {
     setTriggering(null);
   }
 
-  const stagesWithLeads = PIPELINE_STAGES.filter(s => (byStage[s.id]||[]).length > 0 || ["new","wa_queued","replied","proposal_sent","won"].includes(s.id));
+  const stagesWithLeads = PIPELINE_STAGES.filter(s => (byStage[s.id]||[]).length > 0 || ["new","email_queued","email_sent","wa_queued","replied","proposal_sent","won"].includes(s.id));
 
   return (
     <div style={{ padding: "20px", height: "calc(100vh - 120px)", overflowY: "auto" }}>
