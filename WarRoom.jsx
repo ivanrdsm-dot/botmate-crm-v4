@@ -3406,7 +3406,234 @@ function AgentTeamMapTab() {
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 
+// ─── INTERVENTION TAB ────────────────────────────────────────────────────────
+function InterventionTab() {
+  const { leads, loading } = useLeads();
+  const [sending, setSending] = useState({});
+  const [done, setDone] = useState({});
+  const today = new Date().toISOString().split("T")[0];
+
+  // Classify leads that need Ivan's attention
+  const replied     = leads.filter(l => ["replied","wa_replied"].includes(l.fields?.Workflow_State));
+  const followupHoy = leads.filter(l => l.fields?.Fecha_Seguimiento === today && !["replied","wa_replied","won","paused"].includes(l.fields?.Workflow_State));
+  const hot         = leads.filter(l => ["hot","HOT"].includes(l.fields?.Temperatura || l.fields?.Clasificacion || "") && !["replied","wa_replied","won"].includes(l.fields?.Workflow_State));
+  const stalled     = leads.filter(l => {
+    const s = l.fields?.Workflow_State;
+    const fs = l.fields?.Fecha_Seguimiento;
+    if (!fs || !s) return false;
+    return fs < today && ["email_sent","wa_sent","email_queued","wa_queued"].includes(s);
+  });
+
+  const totalInterventions = replied.length + followupHoy.length;
+
+  const triggerReply = async (leadId, fields) => {
+    setSending(p => ({...p, [leadId]: true}));
+    try {
+      await fetch("https://primary-production-c732.up.railway.app/webhook/hermes-reply-followup", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_id: leadId, reply_body: fields.Ultimo_Evento || "", subject: fields.Email_Asunto || "" })
+      });
+      setDone(p => ({...p, [leadId]: true}));
+    } catch(e) {}
+    setSending(p => ({...p, [leadId]: false}));
+  };
+
+  const triggerEmail = async (leadId, fields) => {
+    setSending(p => ({...p, [leadId+"_e"]: true}));
+    try {
+      await fetch("https://primary-production-c732.up.railway.app/webhook/nexus-email-outreach", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_id: leadId, score: fields.Score_IA || 50, robot: fields.Robot_Recomendado || "" })
+      });
+      setDone(p => ({...p, [leadId+"_e"]: true}));
+    } catch(e) {}
+    setSending(p => ({...p, [leadId+"_e"]: false}));
+  };
+
+  const LeadRow = ({ lead, actions }) => {
+    const f = lead.fields || {};
+    const temp = f.Temperatura || f.Clasificacion || "cold";
+    const tempColor = { hot:"#ef4444", HOT:"#ef4444", warm:"#f59e0b", WARM:"#f59e0b", cold:"#64748b", COLD:"#64748b" }[temp] || "#64748b";
+    return (
+      <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderLeft:`3px solid ${tempColor}`, borderRadius:"8px", padding:"12px 14px", marginBottom:"8px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px", flexWrap:"wrap" }}>
+        <div style={{ flex:1, minWidth:"200px" }}>
+          <div style={{ fontWeight:"700", fontSize:"13px", color:"#0f172a" }}>{f.Empresa || f.Name || "—"}</div>
+          <div style={{ fontSize:"11px", color:"#64748b", marginTop:"2px" }}>{(f.Name||"").split(" ")[0]}{f.Cargo ? ` · ${f.Cargo.slice(0,28)}` : ""}</div>
+          {f.Ultimo_Evento && <div style={{ fontSize:"11px", color:"#2563eb", marginTop:"4px", fontStyle:"italic" }}>"{f.Ultimo_Evento.slice(0,70)}"</div>}
+        </div>
+        <div style={{ display:"flex", gap:"6px", alignItems:"center", flexWrap:"wrap" }}>
+          <span style={{ background:tempColor+"20", color:tempColor, border:`1px solid ${tempColor}40`, borderRadius:"4px", padding:"2px 7px", fontSize:"10px", fontWeight:"700" }}>
+            {f.Score_IA || "—"} · {temp.toUpperCase()}
+          </span>
+          <span style={{ background:"#f1f5f9", color:"#475569", borderRadius:"4px", padding:"2px 7px", fontSize:"10px" }}>
+            {f.Workflow_State || "—"}
+          </span>
+          {actions(lead)}
+        </div>
+      </div>
+    );
+  };
+
+  const Section = ({ title, color, icon, leads: sLeads, emptyMsg, renderActions }) => (
+    <div style={{ ...STYLES.card, marginBottom:"16px" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"14px" }}>
+        <span style={{ fontSize:"18px" }}>{icon}</span>
+        <div>
+          <div style={{ fontWeight:"700", color:"#0f172a", fontSize:"14px" }}>{title}</div>
+          <div style={{ fontSize:"11px", color:"#64748b" }}>{sLeads.length} {sLeads.length===1?"lead":"leads"}</div>
+        </div>
+        {sLeads.length > 0 && <span style={{ marginLeft:"auto", background:color+"20", color, border:`1px solid ${color}40`, borderRadius:"12px", padding:"2px 10px", fontSize:"11px", fontWeight:"700" }}>{sLeads.length}</span>}
+      </div>
+      {sLeads.length === 0
+        ? <div style={{ textAlign:"center", color:"#94a3b8", padding:"20px 0", fontSize:"12px" }}>✅ {emptyMsg}</div>
+        : sLeads.map(l => <LeadRow key={l.id} lead={l} actions={renderActions} />)
+      }
+    </div>
+  );
+
+  if (loading) return <div style={{ textAlign:"center", padding:"60px", color:"#94a3b8" }}>Cargando...</div>;
+
+  return (
+    <div style={STYLES.content}>
+      {/* Header */}
+      <div style={{ marginBottom:"20px" }}>
+        <div style={{ fontSize:"20px", fontWeight:"800", color:"#0f172a", marginBottom:"4px" }}>
+          🚨 Centro de Intervención
+        </div>
+        <div style={{ fontSize:"12px", color:"#64748b" }}>
+          Lo que necesita tu atención ahora mismo. El sistema manejó el resto.
+        </div>
+      </div>
+
+      {/* Summary banner */}
+      {totalInterventions === 0 ? (
+        <div style={{ background:"linear-gradient(135deg,#f0fdf4,#dcfce7)", border:"2px solid #16a34a", borderRadius:"12px", padding:"20px 24px", marginBottom:"20px", display:"flex", alignItems:"center", gap:"14px" }}>
+          <span style={{ fontSize:"32px" }}>✅</span>
+          <div>
+            <div style={{ fontWeight:"800", color:"#15803d", fontSize:"15px" }}>Sistema autónomo al 100%</div>
+            <div style={{ color:"#16a34a", fontSize:"12px", marginTop:"3px" }}>No hay acciones pendientes. Los agentes tienen todo bajo control.</div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ background:"linear-gradient(135deg,#fff7ed,#fed7aa)", border:"2px solid #f97316", borderRadius:"12px", padding:"20px 24px", marginBottom:"20px", display:"flex", alignItems:"center", gap:"14px" }}>
+          <span style={{ fontSize:"32px" }}>⚡</span>
+          <div>
+            <div style={{ fontWeight:"800", color:"#c2410c", fontSize:"15px" }}>{totalInterventions} acción{totalInterventions!==1?"es":""} requieren tu atención</div>
+            <div style={{ color:"#ea580c", fontSize:"12px", marginTop:"3px" }}>Leads calientes esperando respuesta. Cada hora que pasa enfría el deal.</div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 1 — Replied: need follow-up or proposal */}
+      <Section
+        title="Leads que respondieron — Acción requerida"
+        icon="📩" color="#10b981"
+        leads={replied}
+        emptyMsg="Nadie ha respondido aún. HERMES sigue trabajando."
+        renderActions={(lead) => {
+          const f = lead.fields || {};
+          const isDone = done[lead.id];
+          const isSending = sending[lead.id];
+          return (
+            <div style={{ display:"flex", gap:"6px" }}>
+              {f.Email && (
+                <button
+                  disabled={isSending || isDone}
+                  onClick={() => triggerReply(lead.id, f)}
+                  style={{ background: isDone?"#dcfce7":isSending?"#f1f5f9":"#2563eb", color: isDone?"#16a34a":isSending?"#94a3b8":"#fff", border:"none", borderRadius:"6px", padding:"6px 12px", fontSize:"11px", fontWeight:"700", cursor: isDone||isSending?"default":"pointer" }}>
+                  {isDone ? "✅ Enviado" : isSending ? "Enviando..." : "📩 Mandar follow-up"}
+                </button>
+              )}
+              {f.Email && (
+                <a href={`mailto:${f.Email}`} style={{ background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0", borderRadius:"6px", padding:"6px 10px", fontSize:"11px", textDecoration:"none" }}>
+                  ✉️ Gmail
+                </a>
+              )}
+              <a href="https://calendar.app.google/zq731y653cuoeu7m9" target="_blank" rel="noreferrer"
+                style={{ background:"#ede9fe", color:"#7c3aed", border:"1px solid #7c3aed40", borderRadius:"6px", padding:"6px 10px", fontSize:"11px", textDecoration:"none" }}>
+                📅 Agendar
+              </a>
+            </div>
+          );
+        }}
+      />
+
+      {/* SECTION 2 — Follow-ups due today */}
+      <Section
+        title="Seguimientos programados para hoy"
+        icon="🎯" color="#f59e0b"
+        leads={followupHoy}
+        emptyMsg="Sin seguimientos pendientes para hoy."
+        renderActions={(lead) => {
+          const f = lead.fields || {};
+          const isDone = done[lead.id+"_e"];
+          const isSending = sending[lead.id+"_e"];
+          return (
+            <div style={{ display:"flex", gap:"6px" }}>
+              {f.Email && (
+                <button
+                  disabled={isSending || isDone}
+                  onClick={() => triggerEmail(lead.id, f)}
+                  style={{ background: isDone?"#dcfce7":isSending?"#f1f5f9":"#f59e0b", color: isDone?"#16a34a":isSending?"#94a3b8":"#fff", border:"none", borderRadius:"6px", padding:"6px 12px", fontSize:"11px", fontWeight:"700", cursor: isDone||isSending?"default":"pointer" }}>
+                  {isDone ? "✅ Enviado" : isSending ? "Enviando..." : "📧 Enviar email"}
+                </button>
+              )}
+            </div>
+          );
+        }}
+      />
+
+      {/* SECTION 3 — HOT leads not yet replied */}
+      <Section
+        title="Leads HOT sin respuesta"
+        icon="🔥" color="#ef4444"
+        leads={hot.slice(0,5)}
+        emptyMsg="No hay leads HOT pendientes."
+        renderActions={(lead) => {
+          const f = lead.fields || {};
+          return (
+            <div style={{ display:"flex", gap:"6px" }}>
+              {f.Email && <a href={`mailto:${f.Email}?subject=Demo BotMate para ${f.Empresa}`} style={{ background:"#fee2e2", color:"#dc2626", border:"1px solid #ef444440", borderRadius:"6px", padding:"6px 10px", fontSize:"11px", textDecoration:"none" }}>✉️ Escribir</a>}
+              <a href="https://www.linkedin.com/search/results/people/" target="_blank" rel="noreferrer" style={{ background:"#dbeafe", color:"#1d4ed8", border:"1px solid #2563eb40", borderRadius:"6px", padding:"6px 10px", fontSize:"11px", textDecoration:"none" }}>🔗 LinkedIn</a>
+            </div>
+          );
+        }}
+      />
+
+      {/* SECTION 4 — Stalled */}
+      {stalled.length > 0 && (
+        <Section
+          title="Leads estancados — Seguimiento vencido"
+          icon="⏰" color="#94a3b8"
+          leads={stalled.slice(0,8)}
+          emptyMsg="Sin leads estancados."
+          renderActions={(lead) => {
+            const f = lead.fields || {};
+            const isDone = done[lead.id+"_e"];
+            const isSending = sending[lead.id+"_e"];
+            return (
+              <div style={{ display:"flex", gap:"6px" }}>
+                {f.Email && (
+                  <button
+                    disabled={isSending || isDone}
+                    onClick={() => triggerEmail(lead.id, f)}
+                    style={{ background: isDone?"#dcfce7":isSending?"#f1f5f9":"#475569", color: isDone?"#16a34a":isSending?"#94a3b8":"#fff", border:"none", borderRadius:"6px", padding:"6px 10px", fontSize:"11px", cursor: isDone||isSending?"default":"pointer" }}>
+                    {isDone ? "✅" : isSending ? "..." : "📧 Re-contactar"}
+                  </button>
+                )}
+              </div>
+            );
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const TABS = [
+  { id: "intervention", label: "🚨 Intervención" },
   { id: "pipeline", label: "🔻 Pipeline" },
   { id: "team", label: "⚡ Agentes" },
   { id: "chat", label: "Command Center" },
@@ -3420,7 +3647,7 @@ const TABS = [
 ];
 
 export default function WarRoom() {
-  const [activeTab, setActiveTab] = useState("pipeline");
+  const [activeTab, setActiveTab] = useState("intervention");
   const { leads } = useLeads();
 
   const hotCount = leads.filter(l => (l.fields?.Clasificacion||l.fields?.Temperatura||"").toLowerCase()==="hot").length;
@@ -3429,6 +3656,7 @@ export default function WarRoom() {
 
   const renderTab = () => {
     switch (activeTab) {
+      case "intervention": return <InterventionTab />;
       case "pipeline": return <PipelineTab />;
       case "team": return <AgentTeamMapTab />;
       case "chat": return <CommandCenterTab />;
@@ -3439,7 +3667,7 @@ export default function WarRoom() {
       case "roadmap": return <RoadmapTab />;
       case "robots": return <RobotsTab />;
       case "sistemas": return <SistemasTab />;
-      default: return <PipelineTab />;
+      default: return <InterventionTab />;
     }
   };
 
