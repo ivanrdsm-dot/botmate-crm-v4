@@ -1,0 +1,117 @@
+{
+  "name": "HERMES Email Tracking (Resend Webhook)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resend-events",
+        "responseMode": "onReceived",
+        "responseData": "noData"
+      },
+      "id": "webhook-resend",
+      "name": "Webhook Resend Events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// HERMES Tracking — Parse Resend webhook event\nconst body = $json.body || $json;\nconst type = body.type || '';\nconst data = body.data || {};\n\n// Extract lead_id from Resend tags\nconst tags = data.tags || {};\nconst leadId = tags.lead_id || '';\nconst resendId = data.email_id || data.id || '';\n\nif (!leadId || !type) {\n  return [{ json: { skip: true, reason: 'No lead_id or type', type, tags } }];\n}\n\n// Map event type → Airtable field update\nconst fieldMap = {\n  'email.opened':      { field: 'Email_Abierto', value: true,  tg: '👁️ Email ABIERTO' },\n  'email.clicked':     { field: 'Email_Click',   value: true,  tg: '🖱️ Email CLICKEADO' },\n  'email.bounced':     { field: 'Email_Bounce',  value: true,  tg: '🔴 Email BOUNCE' },\n  'email.complained':  { field: 'Email_Bounce',  value: true,  tg: '⚠️ Email SPAM REPORT' },\n  'email.unsubscribed':{ field: 'Unsubscribed',  value: true,  tg: '🚫 UNSUBSCRIBE' },\n};\n\nconst mapping = fieldMap[type];\nif (!mapping) {\n  return [{ json: { skip: true, reason: 'Unmapped event type', type } }];\n}\n\nreturn [{ json: {\n  skip:     false,\n  lead_id:  leadId,\n  resend_id: resendId,\n  event:    type,\n  field:    mapping.field,\n  value:    mapping.value,\n  tg_label: mapping.tg,\n  email_to: (data.to || []).join(', '),\n} }];"
+      },
+      "id": "parse-event",
+      "name": "Parse Resend Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.skip }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "filter-skip",
+      "name": "Skip if no action needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "apiToken",
+        "operation": "update",
+        "application": {
+          "__rl": true,
+          "value": "appdBxw9JhiHU9FXI",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblO571b5ojGbLHnX",
+          "mode": "id"
+        },
+        "id": "={{ $json.lead_id }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Ultimo_Evento": "={{ $json.tg_label + ' | ' + $now.format('yyyy-MM-dd HH:mm') }}"
+          }
+        }
+      },
+      "id": "airtable-update",
+      "name": "Update Airtable Lead",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [900, 220]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "telegramApi",
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "5922170884",
+        "text": "={{ $('Parse Resend Event').item.json.tg_label + '\\n' + $('Parse Resend Event').item.json.email_to + '\\nResend: ' + $('Parse Resend Event').item.json.resend_id }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "telegram-alert",
+      "name": "Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [900, 380]
+    }
+  ],
+  "connections": {
+    "Webhook Resend Events": {
+      "main": [[{"node": "Parse Resend Event", "type": "main", "index": 0}]]
+    },
+    "Parse Resend Event": {
+      "main": [[{"node": "Skip if no action needed", "type": "main", "index": 0}]]
+    },
+    "Skip if no action needed": {
+      "main": [
+        [
+          {"node": "Update Airtable Lead", "type": "main", "index": 0},
+          {"node": "Telegram Alert", "type": "main", "index": 0}
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "_meta": {
+    "description": "Recibe eventos de Resend (opened/clicked/bounced/unsubscribed) y actualiza Airtable + Telegram",
+    "webhook_path": "resend-events",
+    "resend_webhook_url": "https://primary-production-c732.up.railway.app/webhook/resend-events"
+  }
+}
