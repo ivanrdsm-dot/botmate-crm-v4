@@ -47,7 +47,7 @@ UNSUB_URL   = 'https://primary-production-c732.up.railway.app/webhook/unsub'
 LOGO        = 'https://botmate.mx/wp-content/uploads/2024/07/Botmate_color.svg'
 ONEPAGE_IMG = 'https://botmate-war-room.vercel.app/assets/onepage-botmate.jpg'
 ONEPAGE_PDF = 'https://botmate-war-room.vercel.app/assets/onepage-botmate.pdf'
-FROM_EMAIL  = 'Ivan Cadavieco <ivan.cadavieco@botmate.mx>'
+FROM_EMAIL  = 'BotMate <ventas@botmate.mx>'
 BCC_EMAIL   = 'ivan.cadavieco@botmate.mx'
 DELAY_SECS  = 4   # seconds between sends (anti-spam pacing)
 
@@ -274,7 +274,7 @@ def signature():
 <td style="border-left:2px solid #e2e8f0;padding-left:12px;vertical-align:middle;">
 <strong style="color:#0f172a;font-size:14px;display:block;">Ivan Cadavieco</strong>
 <span style="color:#64748b;font-size:13px;">Fundador &amp; CEO · BotMate Mexico</span><br>
-<a href="mailto:ivan.cadavieco@botmate.mx" style="color:#2563eb;font-size:13px;text-decoration:none;">ivan.cadavieco@botmate.mx</a>
+<a href="mailto:ventas@botmate.mx" style="color:#2563eb;font-size:13px;text-decoration:none;">ventas@botmate.mx</a>
 &nbsp;·&nbsp;<a href="https://botmate.mx" style="color:#2563eb;font-size:13px;text-decoration:none;">botmate.mx</a>
 </td></tr></table>'''
 
@@ -339,7 +339,7 @@ def build_plain_text(nc, empresa, sector, email_type, intel, rname):
     """Plain text version for anti-spam ratio"""
     cta_q = intel['cta_q'].format(empresa=empresa)
     if email_type == 'hook':
-        return f"Hola {nc},\n\n{intel['pain']}\n\nCon el {rname}: {intel['proof']}\n\n{cta_q}\n\n→ Agendar demo: {CAL}\n\nIvan Cadavieco\nFundador & CEO · BotMate Mexico\nivan.cadavieco@botmate.mx | botmate.mx"
+        return f"Hola {nc},\n\n{intel['pain']}\n\nCon el {rname}: {intel['proof']}\n\n{cta_q}\n\n→ Agendar demo: {CAL}\n\nIvan Cadavieco\nFundador & CEO · BotMate Mexico\nventas@botmate.mx | botmate.mx"
     elif email_type == 'prueba':
         return f"Hola {nc},\n\nLe escribí hace unos días. {intel['proof']}\n\nImplementación: 2 semanas. Renta mensual fija. Sin IMSS.\n\n¿15 minutos para ver si aplica en {empresa}?\n\n→ Agendar: {CAL}\n\nIvan Cadavieco\nFundador & CEO · BotMate Mexico"
     else:
@@ -475,7 +475,7 @@ for i, lead in enumerate(leads, 1):
         'subject':  subject,
         'html':     html,
         'text':     plain_text,
-        'reply_to': 'ivan.cadavieco@botmate.mx',
+        'reply_to': 'ventas@botmate.mx',
         'headers':  {
             'List-Unsubscribe': f'<{UNSUB_URL}?id={lid}>',
             'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
