@@ -47,8 +47,8 @@ UNSUB_URL   = 'https://primary-production-c732.up.railway.app/webhook/unsub'
 LOGO        = 'https://botmate.mx/wp-content/uploads/2024/07/Botmate_color.svg'
 ONEPAGE_IMG = 'https://botmate-war-room.vercel.app/assets/onepage-botmate.jpg'
 ONEPAGE_PDF = 'https://botmate-war-room.vercel.app/assets/onepage-botmate.pdf'
-FROM_EMAIL  = 'BotMate <ventas@botmate.mx>'
-BCC_EMAIL   = 'ivan.cadavieco@botmate.mx'
+FROM_EMAIL  = 'Ivan | BotMate <ventas@botmate.mx>'
+BCC_EMAIL   = None  # Sin copia oculta
 DELAY_SECS  = 4   # seconds between sends (anti-spam pacing)
 
 NOW         = datetime.now(timezone.utc)
@@ -71,9 +71,9 @@ CONCEPTS = {
             'corporativo': 'El costo real de un trabajador de limpieza supera <strong>$19K MXN/mes</strong> (IMSS, aguinaldo, liquidaciones, reclutamiento). Nuestro robot: renta fija mensual, sin nada de eso.',
         },
         'subject_prefix': {
-            'hook':    ['{nc}, ¿cuánto cuesta el ausentismo en {empresa}?', 'El ROI de automatizar en {empresa}'],
-            'prueba':  ['Re: los números de {empresa} — un dato que me quedé pensando', 'Un cálculo rápido para {empresa}'],
-            'breakup': ['Último mensaje — {nc}', 'Cerrando el caso de {empresa}'],
+            'hook':    ['pregunta rápida, {nc}', 'el número de {empresa}', '¿cuánto gasta {empresa} en personal?'],
+            'prueba':  ['re: {empresa}', 'seguimiento, {nc}', 'dato concreto para {empresa}'],
+            'breakup': ['última vez, {nc}', 'antes de cerrar — {nc}'],
         }
     },
     1: {  # MARTES — Evento / Urgencia temporal
@@ -89,9 +89,9 @@ CONCEPTS = {
             'corporativo': 'Presupuestos Q2 están aprobados. <strong>Mayo</strong> es la ventana ideal para arrancar un proyecto de automatización — antes de que el Q3 los absorba.',
         },
         'subject_prefix': {
-            'hook':    ['{nc}, el 10 de mayo y la operación de {empresa}', '{empresa}: ¿lista para el puente de mayo?'],
-            'prueba':  ['Re: {empresa} y la temporada de mayo', '{nc} — datos sobre el 10 de mayo'],
-            'breakup': ['Último mensaje antes del 10 de mayo — {nc}', 'Cerrando el caso de {empresa}'],
+            'hook':    ['una idea para {empresa}, {nc}', '¿esto aplica en {empresa}?', '{nc} — algo de su sector'],
+            'prueba':  ['re: {empresa}', 'seguimiento, {nc}', 'dato que me quedé pensando'],
+            'breakup': ['última vez, {nc}', 'antes de cerrar — {nc}'],
         }
     },
     2: {  # MIÉRCOLES — Caso de éxito / Social proof
@@ -107,9 +107,9 @@ CONCEPTS = {
             'corporativo': '<strong>40+ empresas en México</strong> ya rentan robots BotMate. ROI promedio documentado: 4-6 meses. ¿Quiere ver el caso más parecido a {empresa}?',
         },
         'subject_prefix': {
-            'hook':    ['El caso que más se parece a {empresa}', '{nc} — un resultado que creo aplica en {empresa}'],
-            'prueba':  ['Re: {empresa} — el caso de éxito que le mencioné', '{nc}, el número que cambió todo'],
-            'breakup': ['Último mensaje — {nc}', '{empresa}: cerrando el expediente'],
+            'hook':    ['un cliente muy parecido a {empresa}', 'resultado real — {nc}', '¿le cuento algo, {nc}?'],
+            'prueba':  ['re: {empresa}', 'seguimiento, {nc}', 'el resultado que mencioné'],
+            'breakup': ['última vez, {nc}', 'cerrando — {nc}'],
         }
     },
     3: {  # JUEVES — Dolor sectorial / Pain point
@@ -125,9 +125,9 @@ CONCEPTS = {
             'corporativo': 'El costo oculto de rotación de personal de limpieza: cada baja cuesta $9K-$14K MXN entre finiquito, IMSS, reclutamiento y capacitación. <strong>¿Cuántas tuvo {empresa} este año?</strong>',
         },
         'subject_prefix': {
-            'hook':    ['{nc}, ¿cuánto cuesta la rotación en {empresa}?', '{empresa}: el costo oculto que nadie calcula'],
-            'prueba':  ['Re: el dolor que mencioné — y la solución', '{nc} — un dato sobre {empresa} que no había visto'],
-            'breakup': ['Último mensaje, {nc}', 'Cerrando el expediente de {empresa}'],
+            'hook':    ['una pregunta, {nc}', 'algo sobre {empresa}', '¿cuántas bajas tuvo {empresa} este año?'],
+            'prueba':  ['re: {empresa}', 'seguimiento, {nc}', 'solución concreta para {empresa}'],
+            'breakup': ['última vez, {nc}', 'antes de cerrar — {nc}'],
         }
     },
     4: {  # VIERNES — FOMO / Competencia
@@ -143,9 +143,9 @@ CONCEPTS = {
             'corporativo': '<strong>¿Qué pasaría si su competidor directo instalara un robot mañana?</strong> En 40+ empresas en México ya existe. La ventana de "early adopter" todavía está abierta — pero se cierra.',
         },
         'subject_prefix': {
-            'hook':    ['{nc}: sus competidores ya están mirando esto', '{empresa} vs. la competencia — 2025 es el año'],
-            'prueba':  ['Re: lo que está pasando en su sector', '{nc} — la ventana que se está cerrando'],
-            'breakup': ['Último mensaje — {nc}', 'Antes de cerrar el expediente de {empresa}'],
+            'hook':    ['algo que vi sobre {empresa}', '{nc} — su competencia', 'pregunta directa, {nc}'],
+            'prueba':  ['re: {empresa}', 'seguimiento, {nc}', 'lo que está pasando en su sector'],
+            'breakup': ['última vez, {nc}', 'antes de cerrar — {nc}'],
         }
     },
     5: {  # SÁBADO — Educacional / Robot showcase
@@ -161,9 +161,9 @@ CONCEPTS = {
             'corporativo': 'BotMate renta 5 robots distintos — cada uno diseñado para un problema específico. ¿Cuál aplica en {empresa}? Le envío el catálogo completo con specs y precios de renta.',
         },
         'subject_prefix': {
-            'hook':    ['¿Cómo funciona el robot de {sector} en {empresa}?', '{nc} — fichas técnicas de robots para {empresa}'],
-            'prueba':  ['Re: las specs del robot que te mencioné', '{nc} — el robot específico para {empresa}'],
-            'breakup': ['Último mensaje — {nc}', '{empresa}: cerrando expediente'],
+            'hook':    ['te muestro algo, {nc}', 'para {empresa}', '¿viste esto, {nc}?'],
+            'prueba':  ['re: {empresa}', 'seguimiento, {nc}', 'el robot para {empresa}'],
+            'breakup': ['última vez, {nc}', 'antes de cerrar — {nc}'],
         }
     },
     6: {  # DOMINGO — Referral / Partner
@@ -179,9 +179,9 @@ CONCEPTS = {
             'corporativo': '¿Conoce a alguien en {empresa} o en otra empresa que tome decisiones de operaciones o tecnología? Un referido suyo tiene prioridad en agenda y condiciones especiales.',
         },
         'subject_prefix': {
-            'hook':    ['{nc}, ¿conoce a alguien más en su red?', 'Una pregunta diferente para {nc}'],
-            'prueba':  ['Re: {empresa} — ¿hay alguien más que deba conocer esto?', '{nc} — propuesta de referido'],
-            'breakup': ['Último mensaje — {nc}', '{empresa}: cerrando expediente'],
+            'hook':    ['un favor, {nc}', 'pregunta diferente, {nc}', '¿conoce a alguien, {nc}?'],
+            'prueba':  ['re: {empresa}', 'seguimiento, {nc}', 'favor rápido'],
+            'breakup': ['última vez, {nc}', 'antes de cerrar — {nc}'],
         }
     },
 }
@@ -197,15 +197,32 @@ ROBOTS = {
     'CC1':       {'img':'https://botmate.mx/wp-content/uploads/2025/05/PuduCC1-250x300.png',   'url':'https://botmate.mx/pudu-cc1/',    'use':'limpieza autónoma de grado industrial',                'specs':'Barre · friega · mopea · aspira · 500mm de área · carga inalámbrica'},
 }
 
-def resolve_robot(hint, sector):
-    h = (hint or '').lower().replace(' ', '')
-    if 'bella'  in h: return 'BellaBot'
-    if 'pudubot' in h or 'bot2' in h or 'delivery' in h: return 'PuduBot 2'
-    if 'ketty'  in h: return 'KettyBot'
-    if 'swift'  in h: return 'SwiftBot'
-    if 'cc1'    in h or 'limpieza' in h: return 'CC1'
-    defaults = {'restaurante':'BellaBot','hotel':'PuduBot 2','hospital':'CC1','manufactura':'CC1','retail':'CC1','corporativo':'CC1'}
-    return defaults.get(sector, 'CC1')
+def resolve_robot(sector):
+    """Always derive robot from sector — never trust stored hint (gets polluted)"""
+    return {
+        'restaurante': 'BellaBot',
+        'hotel':       'PuduBot 2',
+        'hospital':    'CC1',
+        'manufactura': 'CC1',
+        'retail':      'CC1',
+        'corporativo': 'CC1',
+    }.get(sector, 'CC1')
+
+FREE_DOMAINS = {'gmail','hotmail','yahoo','outlook','icloud','live','proton','me',
+                'aol','msn','ymail','googlemail','zoho'}
+
+def smart_empresa(empresa, email):
+    """If empresa is generic, try to infer from email domain"""
+    if empresa and empresa.strip().lower() not in ['su empresa', '', 'none', 'n/a']:
+        return empresa.strip().title() if empresa.islower() else empresa.strip()
+    domain = email.split('@')[-1].lower() if '@' in email else ''
+    base   = domain.split('.')[0] if '.' in domain else ''
+    # Skip free providers and single-word junk
+    if not base or base in FREE_DOMAINS or len(base) < 4:
+        return 'su empresa'
+    # Clean up and title-case
+    cleaned = base.replace('-', ' ').replace('_', ' ')
+    return cleaned.title()
 
 def normalize_sector(raw):
     s = (raw or '').lower()
@@ -219,24 +236,42 @@ def normalize_sector(raw):
 
 # ── SECTOR INTEL (pain + proof base) ──────────────────────────────────────────
 INTEL = {
-    'restaurante': {'pain':'El 87% de meseros rota cada año. Cada baja: $8K–$15K MXN en costo real.',
-                    'proof':'120 cubiertos CDMX: de 8 a 4 personas de servicio. Ahorro: $56K MXN/mes.',
-                    'cta_q':'¿Tiene 20 minutos para verlo en acción en {empresa}?'},
-    'hotel':       {'pain':'62% del costo operativo hotelero es personal. Áreas comunes fallan primero.',
-                    'proof':'Cadena Cancún: −40% en costo de limpieza de áreas comunes. ROI en 3 meses.',
-                    'cta_q':'¿Tiene 20 minutos para verlo en operación en {empresa}?'},
-    'hospital':    {'pain':'Protocolos de higiene requieren frecuencias que el personal no puede sostener en todos los turnos.',
-                    'proof':'CHRISTUS MUGUERZA: −31% en incidentes nosocomiales. 6 meses de operación.',
-                    'cta_q':'¿Tiene 20 minutos para una demo enfocada en {empresa}?'},
-    'manufactura': {'pain':'Plantas 3 turnos: limpieza nocturna cubre solo 60% del área. Riesgo ISO y auditorías.',
-                    'proof':'Bayer México: piloto 4 semanas → 3 unidades CC1. Ahorro: $94K MXN/mes.',
-                    'cta_q':'¿Tiene 20 minutos para verlo en operación?'},
-    'retail':      {'pain':'Piso sucio = accidentes + reclamaciones + pérdida de ventas.',
-                    'proof':'Tienda CDMX: +$500K MXN en ventas en 2 semanas por mejora en experiencia de piso.',
-                    'cta_q':'¿Tiene 20 minutos para verlo en su tienda?'},
-    'corporativo': {'pain':'Costo real de personal de limpieza: +$19K MXN/mes (IMSS + aguinaldo + liquidaciones).',
-                    'proof':'40+ empresas en México. ROI promedio: 4–6 meses.',
-                    'cta_q':'¿Tiene 20 minutos para una demo en {empresa}?'},
+    'restaurante': {
+        'pain':  'El 87% de meseros rota cada año. Cada baja cuesta $8K–$15K MXN entre finiquito, IMSS y capacitación.',
+        'proof': 'Restaurante 120 cubiertos CDMX: bajó de 8 a 4 personas de servicio. Ahorro neto: <strong>$56K MXN/mes</strong>.',
+        'cta_q': '¿Le funciona esta semana para 20 minutos de demo en vivo — sin costo?',
+        'urgency':'Tenemos agenda disponible <strong>esta semana</strong>.',
+    },
+    'hotel': {
+        'pain':  '62% del costo operativo hotelero es personal. Limpieza de áreas comunes falla primero con el ausentismo.',
+        'proof': 'Cadena hotelera Cancún: −40% en costo de limpieza de áreas comunes. ROI en <strong>3 meses</strong>.',
+        'cta_q': '¿Le quedan 20 minutos esta semana para ver el robot en operación?',
+        'urgency':'Solo 3 demos disponibles esta semana en su zona.',
+    },
+    'hospital': {
+        'pain':  'Los protocolos de higiene hospitalaria requieren frecuencias que el personal no puede sostener en todos los turnos.',
+        'proof': 'CHRISTUS MUGUERZA: −31% en incidentes nosocomiales en zonas comunes. <strong>6 meses de operación.</strong>',
+        'cta_q': '¿Tiene 20 minutos esta semana para una demo con datos de su institución?',
+        'urgency':'Agenda disponible esta semana — sin costo.',
+    },
+    'manufactura': {
+        'pain':  'Plantas de 3 turnos: la limpieza nocturna cubre solo el 60% del área. Riesgo ISO, riesgo de auditorías.',
+        'proof': 'Piloto 4 semanas en planta Bayer México → compraron 3 unidades CC1. Ahorro: <strong>$94K MXN/mes</strong>.',
+        'cta_q': '¿Le funciona esta semana para una demo de 20 minutos — con datos de su planta?',
+        'urgency':'Podemos hacer el diagnóstico de cobertura sin costo esta semana.',
+    },
+    'retail': {
+        'pain':  'Personal de limpieza visible en piso interrumpe la experiencia de compra. Piso sucio = accidentes y reclamaciones.',
+        'proof': 'Tienda departamental CDMX: <strong>+$500K MXN en ventas</strong> en 2 semanas tras automatizar limpieza de piso.',
+        'cta_q': '¿Le queda tiempo esta semana para ver el CC1 en operación — 20 minutos, sin compromiso?',
+        'urgency':'Tenemos demo disponible esta semana en su zona.',
+    },
+    'corporativo': {
+        'pain':  'Costo real de personal de limpieza: +$19K MXN/mes por persona (IMSS, aguinaldo, liquidaciones, reclutamiento).',
+        'proof': '40+ empresas en México ya rentan robots BotMate. ROI promedio documentado: <strong>4–6 meses</strong>.',
+        'cta_q': '¿Tiene 20 minutos esta semana para el diagnóstico de ahorro de {empresa}?',
+        'urgency':'Demo gratuita disponible esta semana — agenda se llena rápido.',
+    },
 }
 
 def get_opening_hook(sector, empresa):
@@ -292,31 +327,36 @@ def onepager_block():
 BASE_STYLE = 'font-family:system-ui,-apple-system,Arial,sans-serif;color:#1e293b;max-width:580px;margin:0 auto;padding:24px 20px;line-height:1.75;'
 
 def build_hook(nc, empresa, sector, rname, rdata, intel, lead_id):
-    hook_text  = get_opening_hook(sector, empresa)
-    cta_q      = intel['cta_q'].format(empresa=empresa)
+    """E1 — Texto puro. Sin imagen. Parece email humano = mayor apertura y entregabilidad."""
+    hook_text = get_opening_hook(sector, empresa)
+    cta_q     = intel['cta_q'].format(empresa=empresa)
+    proof_clean = re.sub(r'<[^>]+>', '', intel['proof'])
     return f'''<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="{BASE_STYLE}">
-<p style="margin:0 0 16px;">Hola <strong>{nc}</strong>,</p>
-<p style="margin:0 0 16px;">{hook_text}</p>
-{robot_card(rname, rdata)}
-<p style="margin:0 0 18px;">{cta_q}</p>
-<p style="margin:0 0 26px;"><a href="{CAL}" style="background:#2563eb;color:#fff;padding:13px 26px;border-radius:7px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block;">→ Agendar demo gratuita (20 min)</a></p>
-<p style="font-size:13px;color:#64748b;margin:0 0 0;font-style:italic;">P.S. {intel['proof']}</p>
-{signature()}
+<p style="margin:0 0 18px;">Hola {nc},</p>
+<p style="margin:0 0 18px;">{re.sub(r"<[^>]+>", "", hook_text)}</p>
+<p style="margin:0 0 18px;">{proof_clean}</p>
+<p style="margin:0 0 22px;">{cta_q}<br>
+<a href="{CAL}" style="color:#2563eb;font-weight:600;">Reservar 20 minutos aquí →</a></p>
+<p style="margin:0;">Ivan Cadavieco<br>
+<span style="color:#64748b;font-size:13px;">BotMate Mexico · <a href="https://botmate.mx" style="color:#64748b;">botmate.mx</a></span></p>
 {unsub_footer(lead_id)}
 </body></html>'''
 
 def build_prueba(nc, empresa, sector, rname, rdata, intel, lead_id):
     hook_text = get_opening_hook(sector, empresa)
+    urgency   = intel['urgency']
+    cta_q     = intel['cta_q'].format(empresa=empresa)
     return f'''<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="{BASE_STYLE}">
 <p style="margin:0 0 16px;">Hola <strong>{nc}</strong>,</p>
-<p style="margin:0 0 16px;">Le escribí hace unos días — le comparto este dato concreto antes de cerrar su caso.</p>
+<p style="margin:0 0 14px;">Le escribí hace unos días. Antes de cerrar el caso de <strong>{empresa}</strong>, quiero dejar este dato sobre la mesa:</p>
 {robot_card(rname, rdata)}
-<p style="margin:0 0 16px;">{hook_text}</p>
-<p style="margin:0 0 18px;"><strong>{intel['proof']}</strong><br>Implementación: 2 semanas. Renta mensual fija. Sin IMSS, sin rotación.</p>
-<p style="margin:0 0 26px;">¿15 minutos esta semana para ver si aplica en <strong>{empresa}</strong>?</p>
-<p style="margin:0 0 18px;"><a href="{CAL}" style="background:#2563eb;color:#fff;padding:13px 26px;border-radius:7px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block;">→ Agendar 15 min (sin compromiso)</a></p>
+<p style="margin:0 0 14px;">{hook_text}</p>
+<p style="margin:0 0 16px;padding:14px 16px;background:#f0f9ff;border-left:4px solid #2563eb;border-radius:4px;">{intel['proof']}<br><span style="font-size:13px;color:#475569;">Renta mensual fija. Instalación en 2 semanas. Sin IMSS, sin rotación, sin finiquitos.</span></p>
+<p style="margin:0 0 10px;"><strong>{cta_q}</strong></p>
+<p style="margin:0 0 20px;font-size:13px;color:#64748b;">{urgency}</p>
+<p style="margin:0 0 18px;"><a href="{CAL}" style="background:#2563eb;color:#fff;padding:14px 28px;border-radius:7px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">→ Agendar ahora (15 min, gratis)</a></p>
 {onepager_block()}
 {signature()}
 {unsub_footer(lead_id)}
@@ -326,11 +366,12 @@ def build_breakup(nc, empresa, sector, rname, rdata, intel, lead_id):
     return f'''<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="{BASE_STYLE}">
 <p style="margin:0 0 16px;">Hola <strong>{nc}</strong>,</p>
-<p style="margin:0 0 16px;">Este es mi último mensaje — no quiero saturar su bandeja.</p>
-<p style="margin:0 0 18px;">{intel['pain']} Tenemos un diagnóstico gratuito de ahorro operativo para <strong>{empresa}</strong>: demo del <strong>{rname}</strong> + estimado de ROI en 20 minutos.</p>
-<p style="margin:0 0 18px;">Si no es el momento, ¿podría indicarme quién en {empresa} toma decisiones de operaciones o tecnología?</p>
-<p style="margin:0 0 26px;"><a href="{CAL}" style="background:#2563eb;color:#fff;padding:13px 26px;border-radius:7px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block;">→ Diagnóstico gratuito</a></p>
-<p style="font-size:13px;color:#64748b;margin:0 0 0;font-style:italic;">P.S. BotMate trabaja con 40+ empresas en México. Si cambia de opinión: <a href="{CAL}" style="color:#2563eb;">agenda aquí</a>.</p>
+<p style="margin:0 0 16px;">Este es mi último mensaje — no quiero saturar su bandeja. Solo dejo esto aquí:</p>
+<p style="margin:0 0 16px;padding:14px 16px;background:#fef9c3;border-left:4px solid #ca8a04;border-radius:4px;font-size:14px;">{intel['pain']}</p>
+<p style="margin:0 0 18px;">Tenemos un <strong>diagnóstico gratuito de ahorro operativo</strong> para <strong>{empresa}</strong>: demo del <strong>{rname}</strong> + estimado de ROI personalizado en 20 minutos. Sin costo, sin compromiso.</p>
+<p style="margin:0 0 10px;">Si no es el momento, ¿quién en {empresa} toma decisiones de operaciones? Me encantaría contactarle directamente.</p>
+<p style="margin:0 0 26px;"><a href="{CAL}" style="background:#16a34a;color:#fff;padding:14px 28px;border-radius:7px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">→ Diagnóstico gratuito — última oportunidad</a></p>
+<p style="font-size:13px;color:#64748b;margin:0;font-style:italic;">P.S. 40+ empresas en México ya tienen robots BotMate operando. {intel['proof'].replace('<strong>','').replace('</strong>','')} Si cambia de opinión: <a href="{CAL}" style="color:#2563eb;">agenda aquí</a>.</p>
 {signature()}
 {unsub_footer(lead_id)}
 </body></html>'''
@@ -338,12 +379,27 @@ def build_breakup(nc, empresa, sector, rname, rdata, intel, lead_id):
 def build_plain_text(nc, empresa, sector, email_type, intel, rname):
     """Plain text version for anti-spam ratio"""
     cta_q = intel['cta_q'].format(empresa=empresa)
+    # Strip HTML tags from proof
+    proof_clean = re.sub(r'<[^>]+>', '', intel['proof'])
     if email_type == 'hook':
-        return f"Hola {nc},\n\n{intel['pain']}\n\nCon el {rname}: {intel['proof']}\n\n{cta_q}\n\n→ Agendar demo: {CAL}\n\nIvan Cadavieco\nFundador & CEO · BotMate Mexico\nventas@botmate.mx | botmate.mx"
+        return (f"Hola {nc},\n\n{intel['pain']}\n\n"
+                f"Con el {rname}: {proof_clean}\n\n"
+                f"{cta_q} {intel['urgency']}\n\n"
+                f"→ Agendar demo: {CAL}\n\n"
+                f"Ivan Cadavieco · Fundador & CEO · BotMate Mexico\n"
+                f"ventas@botmate.mx | botmate.mx")
     elif email_type == 'prueba':
-        return f"Hola {nc},\n\nLe escribí hace unos días. {intel['proof']}\n\nImplementación: 2 semanas. Renta mensual fija. Sin IMSS.\n\n¿15 minutos para ver si aplica en {empresa}?\n\n→ Agendar: {CAL}\n\nIvan Cadavieco\nFundador & CEO · BotMate Mexico"
+        return (f"Hola {nc},\n\nLe escribí hace unos días sobre automatización en {empresa}.\n\n"
+                f"{proof_clean}\n\nRenta mensual fija. Instalación en 2 semanas. Sin IMSS.\n\n"
+                f"{cta_q} {intel['urgency']}\n\n"
+                f"→ Agendar: {CAL}\n\n"
+                f"Ivan Cadavieco · Fundador & CEO · BotMate Mexico")
     else:
-        return f"Hola {nc},\n\nEste es mi último mensaje. {intel['pain']}\n\nDiagnóstico gratuito para {empresa}: demo del {rname} + estimado de ROI en 20 min.\n\n→ Agendar: {CAL}\n\nIvan Cadavieco\nFundador & CEO · BotMate Mexico"
+        return (f"Hola {nc},\n\nÚltimo mensaje — no quiero saturar su bandeja.\n\n"
+                f"{intel['pain']}\n\n"
+                f"Diagnóstico gratuito para {empresa}: demo del {rname} + estimado de ROI en 20 min.\n\n"
+                f"→ Agendar: {CAL}\n\n"
+                f"Ivan Cadavieco · Fundador & CEO · BotMate Mexico")
 
 # ── CURL HELPERS ──────────────────────────────────────────────────────────────
 def curl_post(url, payload, headers={}):
@@ -450,9 +506,9 @@ for i, lead in enumerate(leads, 1):
     email   = f.get('Email', '').strip()
     nombre  = f.get('Name', '')
     nc      = nombre.split()[0] if nombre else 'Estimado'
-    empresa = f.get('Empresa') or 'su empresa'
+    empresa = smart_empresa(f.get('Empresa', ''), email)
     sector  = normalize_sector(f.get('Sector', ''))
-    rname   = resolve_robot(f.get('Robot_Recomendado', ''), sector)
+    rname   = resolve_robot(sector)
     rdata   = ROBOTS.get(rname, ROBOTS['CC1'])
     intel   = INTEL.get(sector, INTEL['corporativo'])
 
@@ -471,7 +527,6 @@ for i, lead in enumerate(leads, 1):
     resend_payload = {
         'from':     FROM_EMAIL,
         'to':       [email],
-        'bcc':      [BCC_EMAIL],
         'subject':  subject,
         'html':     html,
         'text':     plain_text,
@@ -516,7 +571,6 @@ for i, lead in enumerate(leads, 1):
                 'Email_Asunto':      subject,
                 'Resend_Email_ID':   resend_id,
                 'Fecha_Seguimiento': next_date,
-                'Robot_Recomendado': rname,
             }}, auth=AK)
 
     results.append({'name': nombre, 'email': email, 'subject': subject, 'ok': ok,
