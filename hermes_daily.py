@@ -419,8 +419,15 @@ def curl_patch(url, payload, auth):
     args = ['curl', '-s', '--max-time', '30', '-X', 'PATCH', url,
             '-H', 'Content-Type: application/json',
             '-H', f'Authorization: Bearer {auth}', '-d', f'@{tmp}']
-    subprocess.run(args, capture_output=True, text=True, timeout=40)
+    r = subprocess.run(args, capture_output=True, text=True, timeout=40)
     os.unlink(tmp)
+    try:
+        resp = json.loads(r.stdout)
+        if 'error' in resp:
+            print(f'   ⚠️  Airtable PATCH error: {resp["error"].get("message","?")}')
+        return resp
+    except:
+        return {}
 
 def curl_get_all_records():
     """Fetch all records with pagination"""
@@ -474,9 +481,9 @@ for rec in all_records:
     if emails_sent >= 3:
         continue
 
-    # Skip leads in terminal states
+    # Skip leads in terminal states (solo valores que existen en Airtable)
     state = f.get('Workflow_State', '')
-    if state in ['email_breakup_sent', 'whatsapp_sent', 'converted', 'unsubscribed']:
+    if state in ['wa_sent', 'replied']:
         skipped_state += 1
         continue
 
@@ -561,7 +568,7 @@ for i, lead in enumerate(leads, 1):
     if ok:
         followup_days = {'hook': 3, 'prueba': 5, 'breakup': 30}[email_type]
         next_date = (NOW + timedelta(days=followup_days)).strftime('%Y-%m-%d')
-        new_state = 'email_breakup_sent' if email_type == 'breakup' else 'email_sent'
+        new_state = 'email_sent'  # único valor válido en Airtable para emails
         curl_patch(
             f'https://api.airtable.com/v0/{BID}/{TBL}/{lid}',
             {'fields': {
