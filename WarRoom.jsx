@@ -5,7 +5,41 @@ const N8N_BASE = "https://primary-production-c732.up.railway.app";
 const WAR_ROOM_CHAT_URL = "https://primary-production-c732.up.railway.app/webhook/warroom-chat";
 const CONTENT_STUDIO_URL = "https://primary-production-c732.up.railway.app/webhook/nexus-content-studio";
 const AIRTABLE_KEY = import.meta.env.VITE_AIRTABLE_KEY || "";
-const AIRTABLE_BASE = "appdBxw9JhiHU9FXI";
+const AIRTABLE_BASE = import.meta.env.VITE_AIRTABLE_BASE || "appdBxw9JhiHU9FXI";
+
+// ─── MEXICO TIMEZONE HELPER (UTC-6, sin DST desde 2023) ──────────────────────
+const mxToday = () => new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+// ─── AIRTABLE PAGINATOR — trae TODOS los registros siguiendo offset ───────────
+async function fetchAllAirtablePages(tableId, fields, sortField = null, sortDir = "desc") {
+  if (!AIRTABLE_KEY) {
+    console.error("[BotMate] ⛔ VITE_AIRTABLE_KEY no está configurada. Agrega la variable en Vercel → Settings → Environment Variables.");
+    return [];
+  }
+  const qs = fields.map(f => `fields[]=${encodeURIComponent(f)}`).join("&");
+  const sortQs = sortField
+    ? `&sort[0][field]=${encodeURIComponent(sortField)}&sort[0][direction]=${sortDir}`
+    : "";
+  let allRecords = [];
+  let offset = null;
+  let page = 0;
+  do {
+    const offsetParam = offset ? `&offset=${encodeURIComponent(offset)}` : "";
+    const res = await fetch(
+      `https://api.airtable.com/v0/${AIRTABLE_BASE}/${tableId}?pageSize=100${sortQs}&${qs}${offsetParam}`,
+      { headers: { Authorization: `Bearer ${AIRTABLE_KEY}` } }
+    );
+    if (!res.ok) {
+      console.error(`[BotMate] Airtable HTTP ${res.status} en página ${page + 1}. Verifica VITE_AIRTABLE_KEY en Vercel.`);
+      break;
+    }
+    const data = await res.json();
+    allRecords = allRecords.concat(data.records || []);
+    offset = data.offset || null;
+    page++;
+  } while (offset && page < 20); // seguridad: max 2000 registros
+  return allRecords;
+}
 const ZEUS_WEBHOOK = "https://primary-production-c732.up.railway.app/webhook/nexus-whatsapp-outreach";
 const HERMES_WEBHOOK = "https://primary-production-c732.up.railway.app/webhook/nexus-email-outreach";
 
@@ -13,18 +47,19 @@ function useLiveMetrics() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [airtableError, setAirtableError] = useState(null);
 
   const fetchMetrics = useCallback(async () => {
+    setAirtableError(null);
+    if (!AIRTABLE_KEY) {
+      setAirtableError("⛔ VITE_AIRTABLE_KEY no está configurada en Vercel. Ve a Vercel → Settings → Environment Variables y agrégala.");
+      setLoading(false);
+      return;
+    }
     try {
       const fields = ["Workflow_State","Clasificacion","Temperatura","Score_IA","Name","Empresa","Agente_Actual","Emails_Enviados","WhatsApp_Enviados","Ultimo_Evento","Fecha_Seguimiento","Email_Asunto","Email_Preview","Resend_Email_ID"];
-      const qs = fields.map(f => `fields[]=${encodeURIComponent(f)}`).join("&");
-      const res = await fetch(
-        `https://api.airtable.com/v0/${AIRTABLE_BASE}/tblO571b5ojGbLHnX?maxRecords=200&${qs}`,
-        { headers: { Authorization: `Bearer ${AIRTABLE_KEY}` } }
-      );
-      if (res.ok) {
-        const airtableData = await res.json();
-        const records = airtableData.records || [];
+      const records = await fetchAllAirtablePages("tblO571b5ojGbLHnX", fields, "Score_IA", "desc");
+      if (records.length >= 0) {
         const total = records.length;
 
         // Count by Workflow_State
@@ -73,7 +108,7 @@ function useLiveMetrics() {
             hoy: records.filter(r => {
               const fs = r.fields.Fecha_Seguimiento;
               if (!fs) return false;
-              const today = new Date().toISOString().split("T")[0];
+              const today = mxToday(); // México UTC-6
               return fs === today;
             }).length,
             pipeline: byState,
@@ -85,7 +120,10 @@ function useLiveMetrics() {
         });
         setLastUpdated(new Date());
       }
-    } catch (_) {}
+    } catch (err) {
+      console.error("[BotMate] useLiveMetrics error:", err);
+      setAirtableError(`Error cargando datos: ${err.message}. Revisa la consola del navegador.`);
+    }
     setLoading(false);
   }, []);
 
@@ -95,7 +133,7 @@ function useLiveMetrics() {
     return () => clearInterval(interval);
   }, [fetchMetrics]);
 
-  return { data, loading, lastUpdated, refresh: fetchMetrics };
+  return { data, loading, lastUpdated, refresh: fetchMetrics, airtableError };
 }
 
 const STYLES = {
@@ -2866,16 +2904,12 @@ function useLeads() {
   const fetchLeads = useCallback(async () => {
     try {
       const fields = ["Name","Empresa","Cargo","Sector","Email","Telefono","Score_IA","Clasificacion","Temperatura","Tipo_Negocio","Robot_Recomendado","Workflow_State","Cadencia_Estado","Cadencia_Dia","Fecha_Seguimiento","Es_VIP","Agente_Actual","Ultimo_Evento","WhatsApp_Enviados","Emails_Enviados","Email_Asunto","Email_Preview","Resend_Email_ID"];
-      const qs = fields.map(f=>`fields[]=${encodeURIComponent(f)}`).join("&");
-      const res = await fetch(
-        `https://api.airtable.com/v0/${AIRTABLE_BASE}/tblO571b5ojGbLHnX?maxRecords=200&${qs}`,
-        { headers: { Authorization: `Bearer ${AIRTABLE_KEY}` } }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setLeads(data.records || []);
-      }
-    } catch (_) {}
+      // Trae TODOS los registros (paginando) ordenados por Score_IA desc
+      const records = await fetchAllAirtablePages("tblO571b5ojGbLHnX", fields, "Score_IA", "desc");
+      setLeads(records);
+    } catch (err) {
+      console.error("[BotMate] useLeads error:", err);
+    }
     setLoading(false);
   }, []);
 
@@ -2890,11 +2924,20 @@ function useLeads() {
 
 function useClientes() {
   const [clientes, setClientes] = useState([]);
-  useEffect(() => {
-    fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/tblPJgobJiZyY2zvh?maxRecords=50`,
-      { headers: { Authorization: `Bearer ${AIRTABLE_KEY}` } })
-      .then(r => r.json()).then(d => setClientes(d.records || [])).catch(() => {});
+  const fetchClientes = useCallback(async () => {
+    try {
+      const fields = ["Name","Empresa","Plan","Status","Robot_Asignado","Fecha_Inicio","MRR"];
+      const records = await fetchAllAirtablePages("tblPJgobJiZyY2zvh", fields, null, "desc");
+      setClientes(records);
+    } catch (err) {
+      console.error("[BotMate] useClientes error:", err);
+    }
   }, []);
+  useEffect(() => {
+    fetchClientes();
+    const t = setInterval(fetchClientes, 60000); // refresca cada 60s
+    return () => clearInterval(t);
+  }, [fetchClientes]);
   return clientes;
 }
 
@@ -3667,6 +3710,7 @@ const TABS = [
 export default function WarRoom() {
   const [activeTab, setActiveTab] = useState("intervention");
   const { leads } = useLeads();
+  const { airtableError } = useLiveMetrics();
 
   const hotCount = leads.filter(l => (l.fields?.Clasificacion||l.fields?.Temperatura||"").toLowerCase()==="hot").length;
   const today = new Date().toISOString().split("T")[0];
@@ -3691,6 +3735,20 @@ export default function WarRoom() {
 
   return (
     <div style={STYLES.root}>
+      {airtableError && (
+        <div style={{
+          background: "#fef2f2", borderBottom: "2px solid #ef4444",
+          padding: "12px 24px", display: "flex", alignItems: "center", gap: "12px",
+          fontSize: "13px", color: "#991b1b", fontWeight: "600",
+        }}>
+          <span>🚨</span>
+          <span>{airtableError}</span>
+          <a href="https://vercel.com/dashboard" target="_blank" rel="noreferrer"
+            style={{ marginLeft: "auto", color: "#dc2626", textDecoration: "underline", fontWeight: "700" }}>
+            Abrir Vercel →
+          </a>
+        </div>
+      )}
       <div style={STYLES.header}>
         <div>
           <div style={STYLES.logo}>BotMate ⚡ War Room</div>

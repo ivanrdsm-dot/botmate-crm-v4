@@ -12,6 +12,10 @@ Cron (8AM L-V):  0 8 * * 1-5 python3 /Users/ivancadavieeco/BOTMATE/hermes_daily.
 """
 
 import subprocess, json, time, re, tempfile, os, random
+import smtplib, ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -42,6 +46,8 @@ TBL         = _e('AIRTABLE_TABLE_ID', 'tblO571b5ojGbLHnX')
 RESEND_KEY  = _e('RESEND_KEY')
 TG_BOT      = _e('TG_BOT_TOKEN')
 TG_CHAT     = _e('TG_CHAT_ID', '5922170884')
+GMAIL_USER  = _e('GMAIL_USER', 'ventas@botmate.mx')
+GMAIL_PASS  = _e('GMAIL_APP_PASSWORD', '')
 CAL         = 'https://calendar.app.google/zq731y653cuoeu7m9'
 UNSUB_URL   = 'https://primary-production-c732.up.railway.app/webhook/unsub'
 LOGO        = 'https://botmate.mx/wp-content/uploads/2024/07/Botmate_color.svg'
@@ -63,12 +69,12 @@ CONCEPTS = {
         'angle': 'roi',
         'tag':   'ROI',
         'opening_hook': {
-            'restaurante': 'Un mesero cuesta $14,500 MXN/mes (IMSS + salario + prestaciones). El <strong>PuduBot 2</strong> cuesta menos de la mitad — y no falta los lunes.',
-            'hotel':       'El costo real de un recepcionista de turno nocturno supera $16K MXN/mes. El robot: fracción del costo, 24/7.',
-            'hospital':    'Protocolo de higiene hospitalaria completo con personal: ~$22K MXN/mes por turno. Con CC1: $0 de IMSS, 0 rotación.',
-            'manufactura': 'Turno nocturno de limpieza: $18K MXN/mes + rotación alta. CC1 cubre los 3 turnos por menos del costo de 1 persona.',
-            'retail':      'Personal de limpieza visible en piso cuesta ~$15K MXN/mes. CC1 lo reemplaza — y trabaja mientras tus clientes compran.',
-            'corporativo': 'El costo real de un trabajador de limpieza supera <strong>$19K MXN/mes</strong> (IMSS, aguinaldo, liquidaciones, reclutamiento). Nuestro robot: renta fija mensual, sin nada de eso.',
+            'restaurante': '2 meseros cuestan $29,000 MXN/mes (IMSS + salario + prestaciones). El <strong>BellaBot</strong>: <strong>$17,500/mes fijos</strong> — y no falta los lunes ni pide aguinaldo.',
+            'hotel':       '1 turno de limpieza de áreas comunes cuesta $19K–$22K MXN/mes. El <strong>CC1</strong>: <strong>$17,500/mes fijos</strong> — cubre los 3 turnos, 24/7, sin IMSS.',
+            'hospital':    'Personal de higiene por turno nocturno: ~$22K MXN/mes + riesgo de rotación. El <strong>CC1</strong> cuesta <strong>$17,500/mes fijos</strong> — y genera reporte automático para auditorías.',
+            'manufactura': '1 persona de limpieza nocturna: $18K–$20K MXN/mes + rotación alta. El <strong>CC1</strong>: <strong>$17,500/mes fijos</strong>, 3 turnos cubiertos, cero finiquitos.',
+            'retail':      'Personal de limpieza en piso: $15K–$19K MXN/mes por persona. El <strong>CC1</strong>: <strong>$17,500/mes fijos</strong> — trabaja mientras tus clientes compran, sin interrupciones.',
+            'corporativo': '1 persona de limpieza cuesta <strong>$19K+ MXN/mes</strong> (IMSS, aguinaldo, liquidaciones). Nuestro robot: <strong>$17,500/mes fijos</strong> — sin nada de eso, sin sorpresas.',
         },
         'subject_prefix': {
             'hook':    ['pregunta rápida, {nc}', 'el número de {empresa}', '¿cuánto gasta {empresa} en personal?'],
@@ -285,95 +291,325 @@ def get_subject(email_type, sector, nc, empresa):
     tmpl = random.choice(subjects)
     return tmpl.format(nc=nc, empresa=emp, sector=sector)
 
-# ── HTML BUILDERS ─────────────────────────────────────────────────────────────
-def robot_card(rname, rdata):
-    return f'''<table cellpadding="0" cellspacing="0" width="100%" style="margin:16px 0 20px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
+# ── SECTOR STATS (3 números para el stats bar) ────────────────────────────────
+SECTOR_STATS = {
+    'restaurante': [('87%', 'rotación anual de meseros'), ('$56K', 'ahorro/mes caso real'), ('$17,500', 'renta mensual fija')],
+    'hotel':       [('40%', 'reducción en costo de limpieza'), ('3 meses', 'para recuperar inversión'), ('$17,500', 'renta mensual fija')],
+    'hospital':    [('−31%', 'incidentes nosocomiales'), ('100%', 'cobertura en turnos'), ('$17,500', 'renta mensual fija')],
+    'manufactura': [('$94K', 'ahorro mensual caso real'), ('3 turnos', 'cubiertos por 1 robot'), ('$17,500', 'renta mensual fija')],
+    'retail':      [('+$500K', 'ventas caso real 2 semanas'), ('0', 'interrupciones al cliente'), ('$17,500', 'renta mensual fija')],
+    'corporativo': [('$19K', 'costo real por persona/mes'), ('4–6 meses', 'ROI promedio'), ('$17,500', 'renta mensual fija')],
+}
+
+SECTOR_CLIENTS = {
+    'restaurante': 'Alsea · Grupo Trimex · Pollo Pepe · Grupo WOW',
+    'hotel':       'Hilton · Grupo Brisas · The Palace Company · Secrets Resorts',
+    'hospital':    'Hospitales Puerta de Hierro · Hospitales MAC · CHRISTUS MUGUERZA',
+    'manufactura': 'Bayer México · General Motors · Mubea · ABC Aluminum',
+    'retail':      'HEB México · The Home Depot · Walmart · Shasa',
+    'corporativo': 'Axtel · Dart Container · Teletón · voestalpine',
+}
+
+SECTOR_VIDEO = {
+    'restaurante': 'https://botmate.mx/bellabot/',
+    'hotel':       'https://botmate.mx/pudubot-2/',
+    'hospital':    'https://botmate.mx/pudu-cc1/',
+    'manufactura': 'https://botmate.mx/pudu-cc1/',
+    'retail':      'https://botmate.mx/pudu-cc1/',
+    'corporativo': 'https://botmate.mx/robots/',
+}
+
+BASE_STYLE = 'font-family:Arial,Helvetica,sans-serif;color:#1e293b;max-width:600px;margin:0 auto;padding:0;line-height:1.6;background:#ffffff;'
+
+def _header():
+    return f'''<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:8px 8px 0 0;">
+<tr><td style="padding:18px 28px;">
+<img src="{LOGO}" alt="BotMate" height="32" style="display:block;">
+</td></tr></table>'''
+
+def _footer(lead_id):
+    return f'''<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 8px 8px;">
+<tr><td style="padding:20px 28px;">
+<table cellpadding="0" cellspacing="0"><tr>
+<td style="padding-right:14px;vertical-align:middle;">
+  <img src="{LOGO}" alt="BotMate" width="72" style="display:block;">
+</td>
+<td style="border-left:2px solid #e2e8f0;padding-left:14px;vertical-align:middle;">
+  <strong style="color:#0f172a;font-size:14px;display:block;margin-bottom:2px;">Ivan Cadavieco</strong>
+  <span style="color:#64748b;font-size:13px;">Fundador &amp; CEO · BotMate Mexico</span><br>
+  <a href="mailto:ventas@botmate.mx" style="color:#2563eb;font-size:12px;text-decoration:none;">ventas@botmate.mx</a>
+  &nbsp;·&nbsp;<a href="https://wa.me/5256466565658" style="color:#16a34a;font-size:12px;text-decoration:none;">WhatsApp</a>
+  &nbsp;·&nbsp;<a href="https://botmate.mx" style="color:#2563eb;font-size:12px;text-decoration:none;">botmate.mx</a>
+</td></tr></table>
+<p style="font-size:11px;color:#94a3b8;margin:14px 0 0;text-align:center;">
+BotMate Mexico · CDMX, México<br>
+<a href="{UNSUB_URL}?id={lead_id}" style="color:#94a3b8;">Darme de baja de estos correos</a>
+</p>
+</td></tr></table>'''
+
+def _stats_bar(sector):
+    stats = SECTOR_STATS.get(sector, SECTOR_STATS['corporativo'])
+    cells = ''
+    for num, label in stats:
+        cells += f'''<td style="width:33%;padding:14px 10px;text-align:center;border-right:1px solid #dbeafe;">
+<strong style="font-size:22px;color:#2563eb;display:block;line-height:1.2;">{num}</strong>
+<span style="font-size:11px;color:#64748b;">{label}</span>
+</td>'''
+    cells = cells.rstrip().removesuffix('border-right:1px solid #dbeafe;') # last no border - handled below
+    # Simple approach: just use the 3 cells
+    s = stats
+    return f'''<table width="100%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin:20px 0;">
 <tr>
-<td width="76" style="padding:12px 0 12px 14px;vertical-align:middle;">
-  <a href="{rdata['url']}"><img src="{rdata['img']}" alt="{rname}" width="60" style="display:block;border-radius:6px;"></a>
+<td style="width:33%;padding:14px 10px;text-align:center;border-right:1px solid #bfdbfe;">
+  <strong style="font-size:20px;color:#2563eb;display:block;line-height:1.2;">{s[0][0]}</strong>
+  <span style="font-size:11px;color:#475569;">{s[0][1]}</span>
 </td>
-<td style="padding:12px;vertical-align:middle;">
-  <strong style="font-size:15px;color:#0f172a;display:block;margin-bottom:3px;">{rname}</strong>
-  <span style="font-size:13px;color:#475569;display:block;margin-bottom:4px;">{rdata['use']}</span>
-  <span style="font-size:12px;color:#64748b;">{rdata['specs']}</span>
+<td style="width:33%;padding:14px 10px;text-align:center;border-right:1px solid #bfdbfe;">
+  <strong style="font-size:20px;color:#2563eb;display:block;line-height:1.2;">{s[1][0]}</strong>
+  <span style="font-size:11px;color:#475569;">{s[1][1]}</span>
 </td>
-<td width="80" style="padding:12px;vertical-align:middle;text-align:right;">
-  <a href="{rdata['url']}" style="font-size:12px;color:#2563eb;text-decoration:none;font-weight:600;white-space:nowrap;">Ver ficha →</a>
+<td style="width:33%;padding:14px 10px;text-align:center;">
+  <strong style="font-size:20px;color:#2563eb;display:block;line-height:1.2;">{s[2][0]}</strong>
+  <span style="font-size:11px;color:#475569;">{s[2][1]}</span>
 </td>
 </tr></table>'''
 
-def signature():
-    return f'''<hr style="border:none;border-top:1px solid #e2e8f0;margin:22px 0 16px;">
-<table cellpadding="0" cellspacing="0"><tr>
-<td style="padding-right:12px;vertical-align:middle;"><img src="{LOGO}" alt="BotMate" width="80" style="display:block;"></td>
-<td style="border-left:2px solid #e2e8f0;padding-left:12px;vertical-align:middle;">
-<strong style="color:#0f172a;font-size:14px;display:block;">Ivan Cadavieco</strong>
-<span style="color:#64748b;font-size:13px;">Fundador &amp; CEO · BotMate Mexico</span><br>
-<a href="mailto:ventas@botmate.mx" style="color:#2563eb;font-size:13px;text-decoration:none;">ventas@botmate.mx</a>
-&nbsp;·&nbsp;<a href="https://botmate.mx" style="color:#2563eb;font-size:13px;text-decoration:none;">botmate.mx</a>
+def _cta_button(text, url, color='#2563eb'):
+    return f'''<table cellpadding="0" cellspacing="0" style="margin:24px 0;">
+<tr><td style="background:{color};border-radius:8px;text-align:center;">
+<a href="{url}" style="display:inline-block;padding:16px 36px;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;letter-spacing:0.3px;">{text}</a>
 </td></tr></table>'''
 
-def unsub_footer(lead_id):
-    return f'''<p style="font-size:11px;color:#94a3b8;margin:16px 0 0;text-align:center;">
-Si no deseas recibir más correos de BotMate, <a href="{UNSUB_URL}?id={lead_id}" style="color:#94a3b8;">haz clic aquí para darte de baja</a>.
-</p>'''
-
-def onepager_block():
-    return f'''<div style="margin:24px 0 0;">
-<p style="font-size:11px;color:#94a3b8;text-align:center;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Portafolio de robots BotMate</p>
-<a href="{ONEPAGE_PDF}"><img src="{ONEPAGE_IMG}" alt="Robots BotMate" width="100%" style="display:block;border-radius:8px;border:1px solid #e2e8f0;max-width:496px;"></a>
-</div>'''
-
-BASE_STYLE = 'font-family:system-ui,-apple-system,Arial,sans-serif;color:#1e293b;max-width:580px;margin:0 auto;padding:24px 20px;line-height:1.75;'
+def _robot_showcase(rname, rdata, sector):
+    video_url = SECTOR_VIDEO.get(sector, rdata['url'])
+    specs_list = rdata['specs'].split(' · ')
+    specs_html = ''.join(f'<li style="margin:4px 0;font-size:13px;color:#475569;">{s}</li>' for s in specs_list)
+    return f'''<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin:20px 0;background:#f8fafc;">
+<tr>
+<td width="180" style="padding:20px;text-align:center;vertical-align:middle;background:#f1f5f9;border-right:1px solid #e2e8f0;">
+  <a href="{rdata['url']}">
+    <img src="{rdata['img']}" alt="{rname}" width="120" style="display:block;margin:0 auto 12px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.15));">
+  </a>
+  <a href="{video_url}" style="display:inline-block;background:#2563eb;color:#fff;font-size:12px;font-weight:700;padding:8px 14px;border-radius:6px;text-decoration:none;">▶ Ver en acción</a>
+</td>
+<td style="padding:20px;vertical-align:top;">
+  <strong style="font-size:18px;color:#0f172a;display:block;margin-bottom:4px;">{rname}</strong>
+  <span style="font-size:13px;color:#2563eb;font-weight:600;display:block;margin-bottom:12px;">{rdata['use']}</span>
+  <ul style="margin:0;padding-left:18px;">
+    {specs_html}
+  </ul>
+  <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0;">
+    <span style="font-size:12px;color:#64748b;">Renta mensual: <strong style="color:#0f172a;">$17,500/mes</strong> · instalación en 2 semanas · sin IMSS</span>
+  </div>
+</td>
+</tr></table>'''
 
 def build_hook(nc, empresa, sector, rname, rdata, intel, lead_id):
-    """E1 — Texto puro. Sin imagen. Parece email humano = mayor apertura y entregabilidad."""
+    """E1 — Email de apertura: personal, una imagen, stat bold, CTA directo."""
     hook_text = get_opening_hook(sector, empresa)
     cta_q     = intel['cta_q'].format(empresa=empresa)
     proof_clean = re.sub(r'<[^>]+>', '', intel['proof'])
-    return f'''<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="{BASE_STYLE}">
-<p style="margin:0 0 18px;">Hola {nc},</p>
-<p style="margin:0 0 18px;">{re.sub(r"<[^>]+>", "", hook_text)}</p>
-<p style="margin:0 0 18px;">{proof_clean}</p>
-<p style="margin:0 0 22px;">{cta_q}<br>
-<a href="{CAL}" style="color:#2563eb;font-weight:600;">Reservar 20 minutos aquí →</a></p>
-<p style="margin:0;">Ivan Cadavieco<br>
-<span style="color:#64748b;font-size:13px;">BotMate Mexico · <a href="https://botmate.mx" style="color:#64748b;">botmate.mx</a></span></p>
-{unsub_footer(lead_id)}
+    clients   = SECTOR_CLIENTS.get(sector, SECTOR_CLIENTS['corporativo'])
+    stats     = SECTOR_STATS.get(sector, SECTOR_STATS['corporativo'])
+    stat_num  = stats[0][0]
+    stat_lbl  = stats[0][1]
+
+    return f'''<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>BotMate — {rname} para {empresa}</title>
+</head>
+<body style="margin:0;padding:20px;background:#f1f5f9;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="{BASE_STYLE}border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+
+{_header()}
+
+<!-- BODY -->
+<tr><td style="padding:32px 28px 0;">
+<p style="margin:0 0 20px;font-size:16px;color:#1e293b;">Hola <strong>{nc}</strong>,</p>
+<p style="margin:0 0 20px;font-size:15px;color:#334155;line-height:1.7;">{hook_text}</p>
+
+<!-- STAT HIGHLIGHT -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:8px;margin:20px 0;">
+<tr><td style="padding:20px 24px;">
+<table cellpadding="0" cellspacing="0" width="100%"><tr>
+<td style="vertical-align:middle;">
+  <strong style="font-size:36px;color:#3b82f6;display:block;line-height:1.1;">{stat_num}</strong>
+  <span style="font-size:13px;color:#94a3b8;">{stat_lbl}</span>
+</td>
+<td style="vertical-align:middle;text-align:right;padding-left:20px;">
+  <img src="{rdata['img']}" alt="{rname}" width="80" style="display:block;filter:drop-shadow(0 2px 8px rgba(59,130,246,0.4));">
+</td>
+</tr></table>
+</td></tr></table>
+
+<p style="margin:0 0 20px;font-size:15px;color:#334155;">{proof_clean}</p>
+<p style="margin:0 0 20px;font-size:15px;color:#334155;font-weight:600;">{cta_q}</p>
+</td></tr>
+
+<!-- CTA -->
+<tr><td style="padding:0 28px;">
+{_cta_button(f'→ Reservar 20 min con Ivan — {rname}', CAL)}
+</td></tr>
+
+<!-- CLIENTS -->
+<tr><td style="padding:0 28px 28px;">
+<p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">
+Ya confían en BotMate: <strong style="color:#64748b;">{clients}</strong>
+</p>
+</td></tr>
+
+{_footer(lead_id)}
+</table>
+</td></tr></table>
 </body></html>'''
+
 
 def build_prueba(nc, empresa, sector, rname, rdata, intel, lead_id):
+    """E2 — Showcase completo: robot, stats, caso, one-pager, CTA."""
     hook_text = get_opening_hook(sector, empresa)
-    urgency   = intel['urgency']
     cta_q     = intel['cta_q'].format(empresa=empresa)
-    return f'''<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="{BASE_STYLE}">
-<p style="margin:0 0 16px;">Hola <strong>{nc}</strong>,</p>
-<p style="margin:0 0 14px;">Le escribí hace unos días. Antes de cerrar el caso de <strong>{empresa}</strong>, quiero dejar este dato sobre la mesa:</p>
-{robot_card(rname, rdata)}
-<p style="margin:0 0 14px;">{hook_text}</p>
-<p style="margin:0 0 16px;padding:14px 16px;background:#f0f9ff;border-left:4px solid #2563eb;border-radius:4px;">{intel['proof']}<br><span style="font-size:13px;color:#475569;">Renta mensual fija. Instalación en 2 semanas. Sin IMSS, sin rotación, sin finiquitos.</span></p>
-<p style="margin:0 0 10px;"><strong>{cta_q}</strong></p>
-<p style="margin:0 0 20px;font-size:13px;color:#64748b;">{urgency}</p>
-<p style="margin:0 0 18px;"><a href="{CAL}" style="background:#2563eb;color:#fff;padding:14px 28px;border-radius:7px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">→ Agendar ahora (15 min, gratis)</a></p>
-{onepager_block()}
-{signature()}
-{unsub_footer(lead_id)}
+    clients   = SECTOR_CLIENTS.get(sector, SECTOR_CLIENTS['corporativo'])
+    proof_html = intel['proof']
+
+    return f'''<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>BotMate — {rname} para {empresa}</title>
+</head>
+<body style="margin:0;padding:20px;background:#f1f5f9;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="{BASE_STYLE}border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+
+{_header()}
+
+<!-- BODY -->
+<tr><td style="padding:32px 28px 0;">
+<p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>{nc}</strong>,</p>
+<p style="margin:0 0 20px;font-size:15px;color:#475569;">Le escribí hace unos días sobre <strong>{empresa}</strong>. Antes de cerrar este caso, quiero mostrarle exactamente qué resolvemos.</p>
+
+<!-- ROBOT SHOWCASE -->
+{_robot_showcase(rname, rdata, sector)}
+
+<!-- STATS BAR -->
+{_stats_bar(sector)}
+
+<!-- PROOF BLOCK -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;margin:0 0 20px;">
+<tr><td style="padding:18px 20px;">
+<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:1px;">📊 Resultado documentado</p>
+<p style="margin:0 0 8px;font-size:14px;color:#0f172a;">{proof_html}</p>
+<p style="margin:0;font-size:12px;color:#64748b;">Renta mensual fija · instalación en 2 semanas · sin IMSS · sin liquidaciones · sin rotación</p>
+</td></tr></table>
+
+<!-- HOOK -->
+<p style="margin:0 0 20px;font-size:15px;color:#334155;line-height:1.7;">{hook_text}</p>
+<p style="margin:0 0 8px;font-size:15px;color:#1e293b;font-weight:700;">{cta_q}</p>
+<p style="margin:0 0 20px;font-size:13px;color:#64748b;">{intel['urgency']}</p>
+</td></tr>
+
+<!-- CTA -->
+<tr><td style="padding:0 28px;">
+{_cta_button(f'→ Agendar demo gratuita — {rname}', CAL)}
+</td></tr>
+
+<!-- ONE-PAGER -->
+<tr><td style="padding:0 28px 20px;">
+<p style="margin:0 0 10px;font-size:12px;color:#94a3b8;text-align:center;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Portafolio completo de robots BotMate</p>
+<a href="{ONEPAGE_PDF}">
+  <img src="{ONEPAGE_IMG}" alt="Robots BotMate" width="100%" style="display:block;border-radius:8px;border:1px solid #e2e8f0;max-width:544px;">
+</a>
+<p style="margin:10px 0 0;font-size:12px;color:#94a3b8;text-align:center;">
+  <a href="{ONEPAGE_PDF}" style="color:#2563eb;font-weight:600;">Descargar catálogo completo PDF →</a>
+</p>
+</td></tr>
+
+<!-- CLIENTS -->
+<tr><td style="padding:0 28px 28px;">
+<p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">
+Ya confían en BotMate: <strong style="color:#64748b;">{clients}</strong>
+</p>
+</td></tr>
+
+{_footer(lead_id)}
+</table>
+</td></tr></table>
 </body></html>'''
 
+
 def build_breakup(nc, empresa, sector, rname, rdata, intel, lead_id):
-    return f'''<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="{BASE_STYLE}">
-<p style="margin:0 0 16px;">Hola <strong>{nc}</strong>,</p>
-<p style="margin:0 0 16px;">Este es mi último mensaje — no quiero saturar su bandeja. Solo dejo esto aquí:</p>
-<p style="margin:0 0 16px;padding:14px 16px;background:#fef9c3;border-left:4px solid #ca8a04;border-radius:4px;font-size:14px;">{intel['pain']}</p>
-<p style="margin:0 0 18px;">Tenemos un <strong>diagnóstico gratuito de ahorro operativo</strong> para <strong>{empresa}</strong>: demo del <strong>{rname}</strong> + estimado de ROI personalizado en 20 minutos. Sin costo, sin compromiso.</p>
-<p style="margin:0 0 10px;">Si no es el momento, ¿quién en {empresa} toma decisiones de operaciones? Me encantaría contactarle directamente.</p>
-<p style="margin:0 0 26px;"><a href="{CAL}" style="background:#16a34a;color:#fff;padding:14px 28px;border-radius:7px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">→ Diagnóstico gratuito — última oportunidad</a></p>
-<p style="font-size:13px;color:#64748b;margin:0;font-style:italic;">P.S. 40+ empresas en México ya tienen robots BotMate operando. {intel['proof'].replace('<strong>','').replace('</strong>','')} Si cambia de opinión: <a href="{CAL}" style="color:#2563eb;">agenda aquí</a>.</p>
-{signature()}
-{unsub_footer(lead_id)}
+    """E3 — Último intento: urgencia, oferta gratuita, P.S. con prueba social."""
+    proof_clean = re.sub(r'<[^>]+>', '', intel['proof'])
+    clients     = SECTOR_CLIENTS.get(sector, SECTOR_CLIENTS['corporativo'])
+    stats       = SECTOR_STATS.get(sector, SECTOR_STATS['corporativo'])
+
+    return f'''<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>BotMate — Último mensaje para {empresa}</title>
+</head>
+<body style="margin:0;padding:20px;background:#f1f5f9;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="{BASE_STYLE}border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+
+{_header()}
+
+<!-- BODY -->
+<tr><td style="padding:32px 28px 0;">
+<p style="margin:0 0 16px;font-size:16px;color:#1e293b;">Hola <strong>{nc}</strong>,</p>
+<p style="margin:0 0 20px;font-size:15px;color:#334155;">Este es mi último mensaje — no quiero saturar su bandeja. Pero antes de cerrar el caso de <strong>{empresa}</strong>, quiero dejar esto sobre la mesa:</p>
+
+<!-- PAIN BOX -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#fefce8;border:1px solid #fde047;border-radius:8px;margin:0 0 20px;">
+<tr><td style="padding:18px 20px;">
+<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#854d0e;text-transform:uppercase;letter-spacing:1px;">⚠️ El costo de no actuar</p>
+<p style="margin:0;font-size:14px;color:#1e293b;line-height:1.7;">{intel['pain']}</p>
+</td></tr></table>
+
+<!-- OFERTA GRATUITA -->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin:0 0 20px;">
+<tr><td style="padding:18px 20px;">
+<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:1px;">🎁 Oferta especial — sin costo</p>
+<p style="margin:0 0 12px;font-size:15px;color:#0f172a;font-weight:600;">Diagnóstico gratuito de ahorro operativo para <strong>{empresa}</strong>:</p>
+<ul style="margin:0;padding-left:20px;">
+  <li style="margin:6px 0;font-size:14px;color:#1e293b;">Demo en vivo del <strong>{rname}</strong> adaptada a su operación</li>
+  <li style="margin:6px 0;font-size:14px;color:#1e293b;">Estimado de ROI personalizado con datos de <strong>{empresa}</strong></li>
+  <li style="margin:6px 0;font-size:14px;color:#1e293b;">Comparativa costo robot vs. costo actual de personal</li>
+</ul>
+<p style="margin:12px 0 0;font-size:13px;color:#64748b;">20 minutos · sin costo · sin compromiso · esta semana</p>
+</td></tr></table>
+
+<!-- STATS -->
+{_stats_bar(sector)}
+
+<p style="margin:0 0 8px;font-size:15px;color:#334155;">Si no es el momento, ¿hay alguien más en <strong>{empresa}</strong> que tome decisiones de operaciones? Me encantaría contactarle directamente.</p>
+</td></tr>
+
+<!-- CTA -->
+<tr><td style="padding:0 28px;">
+{_cta_button('→ Diagnóstico gratuito — Agendar ahora', CAL, '#16a34a')}
+</td></tr>
+
+<!-- PS -->
+<tr><td style="padding:0 28px 28px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e2e8f0;padding-top:16px;margin-top:4px;">
+<tr><td>
+<p style="margin:0;font-size:13px;color:#64748b;font-style:italic;">
+<strong>P.S.</strong> {proof_clean} Ya operamos en: <strong style="color:#475569;">{clients}</strong>. Si cambia de opinión en cualquier momento: <a href="{CAL}" style="color:#2563eb;">agenda aquí</a>.
+</p>
+</td></tr></table>
+</td></tr>
+
+{_footer(lead_id)}
+</table>
+</td></tr></table>
 </body></html>'''
 
 def build_plain_text(nc, empresa, sector, email_type, intel, rname):
@@ -401,14 +637,77 @@ def build_plain_text(nc, empresa, sector, email_type, intel, rname):
                 f"→ Agendar: {CAL}\n\n"
                 f"Ivan Cadavieco · Fundador & CEO · BotMate Mexico")
 
-# ── CURL HELPERS ──────────────────────────────────────────────────────────────
-def curl_post(url, payload, headers={}):
+# ── EMAIL SEND ENGINE — Gmail SMTP primero, Resend como fallback ──────────────
+def send_email(to_addr, subject, html_body, plain_body, lead_id):
+    """
+    Intenta Gmail SMTP primero (aparece en Enviados de Gmail).
+    Si falla o no hay App Password → usa Resend como fallback.
+    Retorna: (ok: bool, msg_id: str, method: str)
+    """
+    # ── Intento 1: Gmail SMTP ────────────────────────────────────────────────
+    if GMAIL_PASS:
+        try:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From']    = formataddr(('Ivan | BotMate', GMAIL_USER))
+            msg['To']      = to_addr
+            msg['Reply-To'] = GMAIL_USER
+            msg['List-Unsubscribe'] = f'<{UNSUB_URL}?id={lead_id}>'
+            msg.attach(MIMEText(plain_body, 'plain', 'utf-8'))
+            msg.attach(MIMEText(html_body,  'html',  'utf-8'))
+            ctx = ssl.create_default_context()
+            with smtplib.SMTP('smtp.gmail.com', 587, timeout=30) as srv:
+                srv.ehlo()
+                srv.starttls(context=ctx)
+                srv.login(GMAIL_USER, GMAIL_PASS)
+                srv.sendmail(GMAIL_USER, [to_addr], msg.as_string())
+            return True, f'gmail-{int(time.time())}', 'Gmail'
+        except Exception as e:
+            print(f'   ⚠️  Gmail SMTP falló ({e}) → usando Resend')
+
+    # ── Fallback: Resend API ─────────────────────────────────────────────────
+    payload = {
+        'from':     FROM_EMAIL,
+        'to':       [to_addr],
+        'subject':  subject,
+        'html':     html_body,
+        'text':     plain_body,
+        'reply_to': GMAIL_USER,
+        'headers':  {
+            'List-Unsubscribe': f'<{UNSUB_URL}?id={lead_id}>',
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+        'tags': [
+            {'name': 'lead_id', 'value': lead_id[:30]},
+            {'name': 'concepto', 'value': CONCEPT['tag']},
+        ]
+    }
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
         json.dump(payload, f); tmp = f.name
-    args = ['curl', '-s', '--max-time', '60', '-X', 'POST', url,
+    r = subprocess.run(['curl', '-s', '--max-time', '60', '-X', 'POST',
+                        'https://api.resend.com/emails',
+                        '-H', f'Authorization: Bearer {RESEND_KEY}',
+                        '-H', 'Content-Type: application/json',
+                        '-d', f'@{tmp}'],
+                       capture_output=True, text=True, timeout=70)
+    os.unlink(tmp)
+    try:
+        d = json.loads(r.stdout)
+        rid = d.get('id', '')
+        if rid:
+            return True, rid, 'Resend'
+        return False, '', f'Resend-err:{d.get("message","?")[:60]}'
+    except:
+        return False, '', 'parse-error'
+
+def curl_post(url, payload, headers={}):
+    """Generic POST helper — used for Telegram only."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        json.dump(payload, f); tmp = f.name
+    args = ['curl', '-s', '--max-time', '30', '-X', 'POST', url,
             '-H', 'Content-Type: application/json', '-d', f'@{tmp}']
     for k, v in headers.items(): args += ['-H', f'{k}: {v}']
-    r = subprocess.run(args, capture_output=True, text=True, timeout=70)
+    r = subprocess.run(args, capture_output=True, text=True, timeout=40)
     os.unlink(tmp)
     try: return json.loads(r.stdout)
     except: return {'error': r.stdout[:200]}
@@ -434,7 +733,7 @@ def curl_get_all_records():
     records = []
     offset = None
     while True:
-        url = f'https://api.airtable.com/v0/{BID}/{TBL}?maxRecords=100&pageSize=100'
+        url = f'https://api.airtable.com/v0/{BID}/{TBL}?pageSize=100'
         if offset: url += f'&offset={offset}'
         r = subprocess.run(['curl', '-s', '--max-time', '30', url,
                            '-H', f'Authorization: Bearer {AK}'],
@@ -530,40 +829,14 @@ for i, lead in enumerate(leads, 1):
     else:
         html = build_breakup(nc, empresa, sector, rname, rdata, intel, lid)
 
-    # Build Resend payload with anti-spam headers
-    resend_payload = {
-        'from':     FROM_EMAIL,
-        'to':       [email],
-        'subject':  subject,
-        'html':     html,
-        'text':     plain_text,
-        'reply_to': 'ventas@botmate.mx',
-        'headers':  {
-            'List-Unsubscribe': f'<{UNSUB_URL}?id={lid}>',
-            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-            'X-Concepto': CONCEPT['tag'],
-            'X-Mailer': 'BotMate-HERMES-v8',
-        },
-        'tags': [
-            {'name': 'email_type', 'value': email_type},
-            {'name': 'sector',     'value': sector},
-            {'name': 'concepto',   'value': CONCEPT['tag']},
-            {'name': 'lead_id',    'value': lid[:30]},
-        ]
-    }
-
-    send_result = curl_post('https://api.resend.com/emails', resend_payload,
-                            headers={'Authorization': f'Bearer {RESEND_KEY}'})
-
-    resend_id = send_result.get('id', '')
-    ok = bool(resend_id)
+    ok, resend_id, method = send_email(email, subject, html, plain_text, lid)
     if ok: sent_ok += 1
     else:  sent_fail += 1
 
     label = f'E{n_sent+1}({email_type})'
     icon  = '✅' if ok else '❌'
-    print(f'{icon} [{i:02d}/{len(leads)}] {label} | {nombre} | {empresa} | {sector} | {rname}')
-    if not ok: print(f'   Error: {send_result}')
+    print(f'{icon} [{i:02d}/{len(leads)}] {label} | {nombre} | {empresa} | {sector} | {rname} | via {method}')
+    if not ok: print(f'   Error: {method}')
 
     if ok:
         followup_days = {'hook': 3, 'prueba': 5, 'breakup': 30}[email_type]
