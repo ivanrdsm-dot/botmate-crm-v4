@@ -14,9 +14,11 @@ GET /health → 200 OK (Railway health check)
 """
 
 from flask import Flask, request, jsonify
-import os, json, subprocess, tempfile
+import os, json
 from pathlib import Path
 from datetime import datetime
+from urllib.request import urlopen, Request
+from urllib.error import URLError
 
 app = Flask(__name__)
 
@@ -402,27 +404,20 @@ ventas@botmate.mx · +52 56 4666 5718 · botmate.mx
         'reply_to': 'ventas@botmate.mx',
     }
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-        json.dump(payload, f)
-        tmp = f.name
-
-    try:
-        r_api = subprocess.run(
-            ['curl', '-s', '--max-time', '30', '-X', 'POST',
-             'https://api.resend.com/emails',
-             '-H', f'Authorization: Bearer {RESEND_KEY}',
-             '-H', 'Content-Type: application/json',
-             '-d', f'@{tmp}'],
-            capture_output=True, text=True, timeout=40
-        )
-        os.unlink(tmp)
-        d = json.loads(r_api.stdout)
-        if not d.get('id'):
-            raise RuntimeError(f"Resend error: {d.get('message', d)}")
-    except Exception:
-        try: os.unlink(tmp)
-        except: pass
-        raise
+    body = json.dumps(payload).encode('utf-8')
+    req  = Request(
+        'https://api.resend.com/emails',
+        data=body,
+        headers={
+            'Authorization':  f'Bearer {RESEND_KEY}',
+            'Content-Type':   'application/json',
+        },
+        method='POST'
+    )
+    with urlopen(req, timeout=30) as resp:
+        d = json.loads(resp.read())
+    if not d.get('id'):
+        raise RuntimeError(f"Resend error: {d.get('message', d)}")
 
 # ── FLASK ENDPOINTS ───────────────────────────────────────────────────────────
 @app.route('/health', methods=['GET'])
