@@ -3,7 +3,7 @@
 BotMate Robot Catalog Emailer
 ─────────────────────────────
 Flask HTTP service que n8n llama cuando un cliente pide información de un robot.
-Detecta el robot, genera un HTML de lujo y lo manda por Gmail SMTP.
+Detecta el robot, genera un HTML de lujo y lo manda via Resend API (sin SMTP).
 
 Deploy en Railway: ya estás en Railway con n8n, agrega este como servicio separado.
 
@@ -14,9 +14,7 @@ GET /health → 200 OK (Railway health check)
 """
 
 from flask import Flask, request, jsonify
-import smtplib, ssl, os, json
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import os, json, subprocess, tempfile
 from pathlib import Path
 from datetime import datetime
 
@@ -37,8 +35,8 @@ def _load_env():
 _env = _load_env()
 def _e(k, d=''): return os.environ.get(k) or _env.get(k) or d
 
-GMAIL_USER   = _e('GMAIL_USER', 'ventas@botmate.mx')
-GMAIL_PASS   = _e('GMAIL_APP_PASSWORD')
+RESEND_KEY   = _e('RESEND_KEY')
+FROM_EMAIL   = 'Ivan | BotMate <ventas@botmate.mx>'
 WEBHOOK_KEY  = _e('EMAILER_SECRET', 'botmate2025')  # agrega EMAILER_SECRET en Railway
 CAL_LINK     = 'https://calendar.app.google/zq731y653cuoeu7m9'
 LOGO         = 'https://botmate.mx/wp-content/uploads/2024/07/Botmate_color.svg'
@@ -367,17 +365,13 @@ def build_robot_email(robot_key, nombre, empresa):
 </td></tr></table>
 </body></html>'''
 
-# ── SMTP SENDER ───────────────────────────────────────────────────────────────
+# ── RESEND API SENDER ─────────────────────────────────────────────────────────
 def send_robot_email(to_email, robot_key, nombre='', empresa=''):
     r = ROBOTS.get(robot_key, ROBOTS['cc1'])
     nc = nombre.split()[0].title() if nombre else 'Estimado/a'
 
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = f"📋 {r['nombre']} — Información completa para {empresa or 'su empresa'} | BotMate"
-    msg['From']    = f'Ivan | BotMate <{GMAIL_USER}>'
-    msg['To']      = to_email
-
-    plain = f"""Hola {nc},
+    subject = f"📋 {r['nombre']} — Información completa para {empresa or 'su empresa'} | BotMate"
+    plain   = f"""Hola {nc},
 
 Gracias por su interés en el {r['nombre']} — {r['tag']}.
 
@@ -399,15 +393,36 @@ ventas@botmate.mx · +52 56 4666 5718 · botmate.mx
 """
     html = build_robot_email(robot_key, nombre, empresa)
 
-    msg.attach(MIMEText(plain, 'plain'))
-    msg.attach(MIMEText(html, 'html'))
+    payload = {
+        'from':     FROM_EMAIL,
+        'to':       [to_email],
+        'subject':  subject,
+        'html':     html,
+        'text':     plain,
+        'reply_to': 'ventas@botmate.mx',
+    }
 
-    ctx = ssl.create_default_context()
-    with smtplib.SMTP('smtp.gmail.com', 587) as srv:
-        srv.ehlo()
-        srv.starttls(context=ctx)
-        srv.login(GMAIL_USER, GMAIL_PASS)
-        srv.sendmail(GMAIL_USER, to_email, msg.as_string())
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        json.dump(payload, f)
+        tmp = f.name
+
+    try:
+        r_api = subprocess.run(
+            ['curl', '-s', '--max-time', '30', '-X', 'POST',
+             'https://api.resend.com/emails',
+             '-H', f'Authorization: Bearer {RESEND_KEY}',
+             '-H', 'Content-Type: application/json',
+             '-d', f'@{tmp}'],
+            capture_output=True, text=True, timeout=40
+        )
+        os.unlink(tmp)
+        d = json.loads(r_api.stdout)
+        if not d.get('id'):
+            raise RuntimeError(f"Resend error: {d.get('message', d)}")
+    except Exception:
+        try: os.unlink(tmp)
+        except: pass
+        raise
 
 # ── FLASK ENDPOINTS ───────────────────────────────────────────────────────────
 @app.route('/health', methods=['GET'])
