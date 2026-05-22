@@ -436,18 +436,23 @@ def health():
 
 @app.route('/test-resend', methods=['GET'])
 def test_resend():
-    """Diagnóstico: prueba conexión con Resend API"""
-    req = Request('https://api.resend.com/domains',
-                  headers={'Authorization': f'Bearer {RESEND_KEY}', 'Accept': 'application/json'})
+    """Diagnóstico: prueba conexión con Resend API + busca curl"""
+    import subprocess, shutil
+    curl_path = shutil.which('curl') or '/usr/bin/curl'
+    curl_exists = os.path.exists(curl_path)
+
+    # Try with requests if available
     try:
-        with urlopen(req, timeout=10) as resp:
-            return jsonify({'ok': True, 'status': resp.status, 'body': json.loads(resp.read())})
-    except URLError as e:
-        err_body = ''
-        if hasattr(e, 'read'):
-            try: err_body = e.read().decode('utf-8')
-            except: pass
-        return jsonify({'ok': False, 'code': getattr(e, 'code', '?'), 'error': str(e), 'body': err_body}), 200
+        import requests as req_lib
+        r = req_lib.get('https://api.resend.com/domains',
+                        headers={'Authorization': f'Bearer {RESEND_KEY}'}, timeout=10)
+        return jsonify({'ok': True, 'method': 'requests', 'status': r.status_code, 'body': r.json()})
+    except ImportError:
+        pass
+    except Exception as e:
+        pass
+
+    return jsonify({'ok': False, 'curl_path': curl_path, 'curl_exists': curl_exists}), 200
 
 @app.route('/send-robot-catalog', methods=['POST'])
 def send_catalog():
