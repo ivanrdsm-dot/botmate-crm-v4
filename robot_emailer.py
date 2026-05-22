@@ -411,18 +411,43 @@ ventas@botmate.mx · +52 56 4666 5718 · botmate.mx
         headers={
             'Authorization':  f'Bearer {RESEND_KEY}',
             'Content-Type':   'application/json',
+            'Accept':         'application/json',
         },
         method='POST'
     )
-    with urlopen(req, timeout=30) as resp:
-        d = json.loads(resp.read())
-    if not d.get('id'):
-        raise RuntimeError(f"Resend error: {d.get('message', d)}")
+    try:
+        with urlopen(req, timeout=30) as resp:
+            d = json.loads(resp.read())
+        if not d.get('id'):
+            raise RuntimeError(f"Resend error: {d.get('message', d)}")
+    except URLError as e:
+        # Capture Resend error body for debugging
+        err_body = ''
+        if hasattr(e, 'read'):
+            try: err_body = e.read().decode('utf-8')
+            except: pass
+        raise RuntimeError(f"Resend HTTP {getattr(e, 'code', '?')}: {err_body or str(e)}")
 
 # ── FLASK ENDPOINTS ───────────────────────────────────────────────────────────
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({'status': 'ok', 'service': 'BotMate Robot Emailer'}), 200
+    return jsonify({'status': 'ok', 'service': 'BotMate Robot Emailer',
+                    'resend_key_set': bool(RESEND_KEY)}), 200
+
+@app.route('/test-resend', methods=['GET'])
+def test_resend():
+    """Diagnóstico: prueba conexión con Resend API"""
+    req = Request('https://api.resend.com/domains',
+                  headers={'Authorization': f'Bearer {RESEND_KEY}', 'Accept': 'application/json'})
+    try:
+        with urlopen(req, timeout=10) as resp:
+            return jsonify({'ok': True, 'status': resp.status, 'body': json.loads(resp.read())})
+    except URLError as e:
+        err_body = ''
+        if hasattr(e, 'read'):
+            try: err_body = e.read().decode('utf-8')
+            except: pass
+        return jsonify({'ok': False, 'code': getattr(e, 'code', '?'), 'error': str(e), 'body': err_body}), 200
 
 @app.route('/send-robot-catalog', methods=['POST'])
 def send_catalog():
