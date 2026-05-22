@@ -32,36 +32,32 @@ Airtable: guarda email, actualiza Ultimo_Evento
 
 ---
 
-## PASO 1 — Deploy del Robot Emailer en Railway
+## PASO 1 — ✅ DEPLOY COMPLETADO EN RAILWAY
 
-### Opción A: Nuevo servicio en el mismo proyecto Railway
+**URL en producción:** `https://robot-emailer-production.up.railway.app`
+**Service ID:** `2da3c658-442d-4526-b660-0b925d397d21`
+**Proyecto:** `responsible-quietude`
 
-1. Ve a tu proyecto en Railway (donde tienes n8n)
-2. Click **"+ New"** → **"GitHub Repo"** → selecciona `botmate-crm-v4`
-3. En **Root Directory** → `/` (o el path donde está `robot_emailer.py`)
-4. En **Start Command** → `gunicorn robot_emailer:app --bind 0.0.0.0:$PORT`
-5. Agrega las variables de entorno:
-   ```
-   GMAIL_USER=ventas@botmate.mx
-   GMAIL_APP_PASSWORD=ocycidbkagumaejp
-   EMAILER_SECRET=botmate2025seguro
-   PORT=5001
-   ```
-6. Railway te da una URL pública tipo: `https://robot-emailer-production.up.railway.app`
-
-### Opción B: Mismo servicio que n8n (si n8n tiene Procfile)
-
-Agrega al Procfile:
+### Env vars configuradas en Railway:
 ```
-web: gunicorn robot_emailer:app --bind 0.0.0.0:$PORT
+RESEND_KEY=re_9fe3g26b_KF1EdoW8djjiL7MnwHnf1deq
+EMAILER_SECRET=botmate2025seguro
+PORT=8080
 ```
 
-### Test del deploy:
+> ⚠️ Nota técnica: Railway bloquea SMTP (puerto 587). Se usa Resend API via `requests` library.
+> Cloudflare también bloquea Python urllib; `requests` tiene TLS fingerprint diferente que pasa.
+
+### Test del deploy (PROBADO ✅):
 ```bash
-curl -X POST https://TU-URL.railway.app/send-robot-catalog \
+# CC1 - limpieza
+curl -X POST https://robot-emailer-production.up.railway.app/send-robot-catalog \
   -H "Content-Type: application/json" \
   -H "X-Botmate-Key: botmate2025seguro" \
   -d '{"robot":"cc1","email":"ivan.cadavieco@botmate.mx","nombre":"Ivan","empresa":"BotMate"}'
+
+# Health check
+curl https://robot-emailer-production.up.railway.app/health
 ```
 
 ---
@@ -86,7 +82,7 @@ AND: {{ $json.emailDestino }} is not empty
 
 ```yaml
 Method: POST
-URL: https://TU-URL.railway.app/send-robot-catalog
+URL: https://robot-emailer-production.up.railway.app/send-robot-catalog
 Headers:
   Content-Type: application/json
   X-Botmate-Key: botmate2025seguro
@@ -209,11 +205,12 @@ python3 robot_emailer.py bellabot ivan.cadavieco@botmate.mx "Ivan Cadavieco" "Bo
 
 ---
 
-## VARIABLES EN RAILWAY (robot_emailer service)
+## VARIABLES EN RAILWAY (robot_emailer service) ✅ CONFIGURADAS
 
 | Variable | Valor |
 |---|---|
-| `GMAIL_USER` | `ventas@botmate.mx` |
-| `GMAIL_APP_PASSWORD` | `ocycidbkagumaejp` |
-| `EMAILER_SECRET` | `botmate2025seguro` (cambia esto) |
-| `PORT` | `5001` |
+| `RESEND_KEY` | `re_9fe3g26b_KF1EdoW8djjiL7MnwHnf1deq` |
+| `EMAILER_SECRET` | `botmate2025seguro` |
+| `PORT` | `8080` |
+
+> SMTP descartado — Railway lo bloquea en puerto 587. Se usa Resend API.
