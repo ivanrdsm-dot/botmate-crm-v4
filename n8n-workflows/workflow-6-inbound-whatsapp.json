@@ -1,0 +1,474 @@
+{
+  "name": "BotMate — 06 WhatsApp Inbound Handler + Robot Emailer",
+  "nodes": [
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "botmate-wa-inbound",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-wa-in",
+      "name": "Webhook — WhatsApp Entrada",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 400],
+      "webhookId": "botmate-wa-inbound-001"
+    },
+
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\": \"ok\"}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [340, 200]
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// ── PARSE WHATSAPP WEBHOOK ────────────────────────────────────────\n// Meta manda el mensaje dentro de entry[0].changes[0].value\nconst body = $input.item.json.body || $input.item.json;\n\n// Extraer datos del webhook de Meta\nconst entry   = (body.entry || [])[0] || {};\nconst change  = (entry.changes || [])[0] || {};\nconst value   = change.value || {};\nconst msgs    = value.messages || [];\nconst contact = (value.contacts || [])[0] || {};\n\n// Si no hay mensaje (p.ej. status update), ignorar\nif (!msgs.length) return null;\n\nconst msg = msgs[0];\n\n// Solo procesar mensajes de texto\nif (msg.type !== 'text') return null;\n\nconst telefono     = msg.from; // número con código de país, sin +\nconst mensajeTexto = (msg.text || {}).body || '';\nconst nombreWA     = (contact.profile || {}).name || '';\nconst phoneNumberId = (value.metadata || {}).phone_number_id || '';\n\nreturn {\n  telefono,\n  mensajeTexto,\n  nombreWA,\n  phoneNumberId,\n  waMessageId: msg.id,\n};"
+      },
+      "id": "code-parse-wa",
+      "name": "Code: Parse WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 400]
+    },
+
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appdBxw9JhiHU9FXI",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblO571b5ojGbLHnX",
+          "mode": "id"
+        },
+        "filterByFormula": "=SEARCH(\"{{ $json.telefono }}\", ARRAYJOIN({Telefono}, \",\")) > 0",
+        "options": {
+          "maxRecords": 1
+        }
+      },
+      "id": "airtable-find-lead",
+      "name": "Airtable: Buscar Lead",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [580, 400],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "airtable-botmate",
+          "name": "Airtable BotMate"
+        }
+      }
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// ── ROBOT DETECTOR + EMAIL DETECTOR ──────────────────────────────\n// Combina: datos del lead en Airtable + mensaje entrante de WhatsApp\n\n// Datos del lead desde Airtable (puede ser null si es nuevo)\nconst leadData = $input.item.json.fields || $input.item.json || {};\nconst waData   = $('Code: Parse WhatsApp').item.json;\n\nconst telefono      = waData.telefono || '';\nconst mensajeTexto  = waData.mensajeTexto || '';\nconst phoneNumberId = waData.phoneNumberId || '';\nconst nombreWA      = waData.nombreWA || '';\n\n// ── DETECTAR EMAIL EN EL MENSAJE ──────────────────────────────────\nconst emailMatch = mensajeTexto.match(/[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}/i);\nconst emailEnMensaje = emailMatch ? emailMatch[0].toLowerCase() : null;\n\n// ── DETECTAR ROBOT POR PALABRAS CLAVE ─────────────────────────────\nconst msgLow = mensajeTexto.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');\n\nconst ROBOT_KEYWORDS = {\n  kettybot:  ['ketty', 'publicidad', 'pantalla', 'anuncio', 'display', 'marketing', 'promo', 'letrero'],\n  pudubot2:  ['pudu', 'pudubot', 'charola', 'delivery', 'room service', 'entrega', 'hotel delivery'],\n  cc1:       ['cc1', 'limpieza', 'limpiar', 'barrer', 'fregar', 'limpiador', 'piso', 'mop'],\n  bellabot:  ['bella', 'bellabot', 'mesero', 'restaurante', 'servicio a mesa', 'mesas', 'platillos'],\n};\n\nlet robotDetectado = null;\nfor (const [robot, keywords] of Object.entries(ROBOT_KEYWORDS)) {\n  if (keywords.some(k => msgLow.includes(k))) {\n    robotDetectado = robot;\n    break;\n  }\n}\n\n// ── CATALOG POR SECTOR (para context de Claude) ───────────────────\nconst sector = (leadData.Sector || leadData.sector || 'corporativo')\n  .toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');\n\nconst CATALOG = {\n  restaurante: { robot:'BellaBot', img:'https://botmate.mx/wp-content/uploads/2025/05/BellaBot-207x300.png', specs:'Pantalla expresiones · 4 bandejas · 40kg · autonomía 12h', caso:'120 cubiertos CDMX: ahorro neto $56,000/mes', precio:'$17,500/mes' },\n  hotel:       { robot:'PuduBot 2', img:'https://botmate.mx/wp-content/uploads/2025/05/PuduBot2-231x300.png', specs:'3 bandejas · pantalla interactiva · sensores 3D · 30kg', caso:'Cancún: −40% costo limpieza. ROI 3 meses', precio:'$17,500/mes' },\n  hospital:    { robot:'CC1', img:'https://botmate.mx/wp-content/uploads/2025/05/PuduCC1-250x300.png', specs:'Barre+friega+mopea+aspira · 500mm · 18h autonomía', caso:'CHRISTUS MUGUERZA: −31% incidentes nosocomiales', precio:'$17,500/mes' },\n  manufactura: { robot:'CC1', img:'https://botmate.mx/wp-content/uploads/2025/05/PuduCC1-250x300.png', specs:'Industrial · 3 turnos · 18h autonomía · ISO compliant', caso:'Bayer México: ahorro $94,000/mes', precio:'$17,500/mes' },\n  retail:      { robot:'CC1', img:'https://botmate.mx/wp-content/uploads/2025/05/PuduCC1-250x300.png', specs:'Pasillos 80cm · detecta peatones · horario apertura', caso:'CDMX: +$500K ventas 2 semanas', precio:'$17,500/mes' },\n  corporativo: { robot:'CC1', img:'https://botmate.mx/wp-content/uploads/2025/05/PuduCC1-250x300.png', specs:'Silencioso · reporte cobertura · carga inalámbrica', caso:'40+ empresas. ROI 4–6 meses', precio:'$17,500/mes' },\n};\n\nlet sectorMatch = 'corporativo';\nfor (const key of Object.keys(CATALOG)) {\n  if (sector.includes(key)) { sectorMatch = key; break; }\n  if (key === 'restaurante' && /restaur|cafet|cantina|bar|gastro|food|taqueria/.test(sector)) { sectorMatch = key; break; }\n  if (key === 'hotel' && /hotel|resort|hostal|hospedaje|spa/.test(sector)) { sectorMatch = key; break; }\n  if (key === 'hospital' && /hospital|clinica|salud|medic|dental|laboratorio/.test(sector)) { sectorMatch = key; break; }\n  if (key === 'manufactura' && /manufactur|fabrica|planta|industrial|logistica|almacen|bodega/.test(sector)) { sectorMatch = key; break; }\n  if (key === 'retail' && /retail|tienda|supermercado|comercio|departamental|mall/.test(sector)) { sectorMatch = key; break; }\n}\n\nconst bot = CATALOG[sectorMatch];\n\n// Si hay robot detectado por keywords, override el sector\nconst ROBOT_OVERRIDE = {\n  kettybot: { robot:'KettyBot', img:'https://botmate.mx/wp-content/uploads/2025/05/KettyBot-117x300.png', specs:'Pantalla HD · movimiento ágil · interacción con clientes', caso:'Eventos y retail: +35% engagement con marca', precio:'$17,500/mes' },\n  pudubot2: { robot:'PuduBot 2', img:'https://botmate.mx/wp-content/uploads/2025/05/PuduBot2-231x300.png', specs:'3 bandejas · pantalla interactiva · sensores 3D · 30kg', caso:'Hotels: −40% costo delivery, ROI 3 meses', precio:'$17,500/mes' },\n  cc1:      { robot:'CC1', img:'https://botmate.mx/wp-content/uploads/2025/05/PuduCC1-250x300.png', specs:'Barre+friega+mopea · 18h · 500mm ancho', caso:'CHRISTUS MUGUERZA: −31% incidentes. Bayer: $94K ahorro/mes', precio:'$17,500/mes' },\n  bellabot: { robot:'BellaBot', img:'https://botmate.mx/wp-content/uploads/2025/05/BellaBot-207x300.png', specs:'Pantalla expresiones · 4 bandejas · 40kg · autonomía 12h', caso:'120 cubiertos: ahorro $56K/mes. +28% reseñas Google', precio:'$17,500/mes' },\n};\n\nconst botFinal = robotDetectado ? ROBOT_OVERRIDE[robotDetectado] : bot;\n\nreturn {\n  // Lead data\n  leadId:          leadData.id || leadData.leadId || '',\n  nombre:          leadData.Nombre || leadData.nombre || nombreWA || '',\n  empresa:         leadData.Empresa || leadData.empresa || '',\n  sector:          sectorMatch,\n  email:           leadData.Email || leadData.email || '',\n  telefono,\n  phoneNumberId,\n  workflow_state:  leadData.Workflow_State || leadData.workflow_state || 'nuevo',\n  emails_enviados: leadData.Emails_Enviados || 0,\n  ultimo_evento:   leadData.Ultimo_Evento || '',\n  historial_wa:    leadData.Historial_WA || '',\n\n  // Mensaje entrante\n  mensaje_entrante: mensajeTexto,\n\n  // Robot context\n  robotDetectado,\n  robotNombre:     botFinal.robot,\n  robotImg:        botFinal.img,\n  robotSpecs:      botFinal.specs,\n  casoExito:       botFinal.caso,\n  robotPrecio:     botFinal.precio,\n\n  // Email detectado\n  emailEnMensaje,\n\n  // Flags de detección\n  preguntaPrecio: /precio|cuanto|costo|renta|mensualidad|inversion/i.test(mensajeTexto),\n  pideFoto:       /foto|imagen|video|ver|como es|muestra/i.test(mensajeTexto),\n  pideCaso:       /caso|exito|resultado|funciona|comprobado|experiencia/i.test(mensajeTexto),\n};"
+      },
+      "id": "code-robot-detector",
+      "name": "Code: Robot Detector",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [820, 400]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $vars.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"model\": \"claude-opus-4-5\",\n  \"max_tokens\": 1024,\n  \"system\": \"Eres el mejor agente de ventas de BotMate Mexico por WhatsApp. Tu nombre es Ivan (representas a Ivan Cadavieco, Fundador & CEO de BotMate).\\n\\nTu ÚNICA misión: convertir cada conversación en una reunión agendada o en un cierre de contrato.\\n\\nIMPORTANTE: Respondes SIEMPRE en JSON válido con esta estructura exacta:\\n{\\n  \\\"mensaje\\\": \\\"texto del mensaje para el cliente (max 150 palabras)\\\",\\n  \\\"enviarMedia\\\": true o false,\\n  \\\"tipoMedia\\\": \\\"image\\\" | \\\"document\\\" | null,\\n  \\\"mediaUrl\\\": \\\"URL del archivo o null\\\",\\n  \\\"mediaCaption\\\": \\\"caption que acompaña la media o null\\\",\\n  \\\"accion\\\": \\\"SEGUIMIENTO\\\" | \\\"ESCALAR_IVAN\\\" | \\\"COTIZACION_URGENTE\\\" | \\\"INFO_DEMO\\\" | \\\"ENVIAR_CATALOGO\\\" | \\\"PEDIR_EMAIL\\\",\\n  \\\"robotCatalogo\\\": \\\"cc1\\\" | \\\"pudubot2\\\" | \\\"bellabot\\\" | \\\"kettybot\\\" | null,\\n  \\\"emailDestino\\\": \\\"email del cliente si ya lo tienes o null\\\",\\n  \\\"notaInterna\\\": \\\"nota breve para Ivan, no visible al cliente\\\"\\n}\\n\\nCUÁNDO USAR accion=ENVIAR_CATALOGO:\\n- Cuando el cliente pide información por correo\\n- Cuando da su email para que le mandes datos\\n- Cuando dice \\\"mándame al correo\\\", \\\"quiero el catálogo\\\", \\\"envíamelo\\\"\\n- Siempre incluye emailDestino con el email detectado\\n\\nCUÁNDO USAR accion=PEDIR_EMAIL:\\n- Cuando el cliente quiere información pero no ha dado su correo\\n- Responde pidiéndole su email de forma natural\\n\\nEMPRESA: BotMate Mexico — Robots autónomos desde $17,500/mes todo incluido\\nFundador: Ivan Cadavieco | https://calendar.app.google/zq731y653cuoeu7m9\\nClientes: Walmart, Hilton, Alsea, CHRISTUS MUGUERZA, Bayer, Liverpool\",\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"DATOS DEL PROSPECTO:\\nNombre: {{ $json.nombre }}\\nEmpresa: {{ $json.empresa }}\\nSector: {{ $json.sector }}\\nEmail registrado: {{ $json.email }}\\nEtapa actual: {{ $json.workflow_state }}\\nÚltimo evento: {{ $json.ultimo_evento }}\\nHistorial WA: {{ $json.historial_wa }}\\n\\nMENSAJE QUE ACABA DE ESCRIBIR:\\n\\\"{{ $json.mensaje_entrante }}\\\"\\n\\nDETECCIÓN AUTOMÁTICA:\\nRobot detectado por keywords: {{ $json.robotDetectado || \\\"ninguno detectado\\\" }}\\nEmail detectado en el mensaje: {{ $json.emailEnMensaje || \\\"ninguno\\\" }}\\nPregunta precio: {{ $json.preguntaPrecio }}\\nPide foto: {{ $json.pideFoto }}\\n\\nCATÁLOGO DEL ROBOT PARA SU SECTOR:\\nRobot: {{ $json.robotNombre }}\\nImagen: {{ $json.robotImg }}\\nSpecs: {{ $json.robotSpecs }}\\nCaso real: {{ $json.casoExito }}\\nPrecio renta: {{ $json.robotPrecio }}\\n\\nRECUERDA: Si el cliente dio su email (emailEnMensaje no es null), usa accion=ENVIAR_CATALOGO con emailDestino=ese email.\"\n  }]\n}",
+        "options": {}
+      },
+      "id": "http-claude-agent",
+      "name": "HTTP: Claude Agente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1060, 400]
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// ── PARSE CLAUDE JSON RESPONSE ────────────────────────────────────\nconst claudeOut = $input.item.json;\nconst text = (claudeOut.content || [])[0]?.text || '';\n\n// Buscar JSON en la respuesta\nlet parsed = {};\ntry {\n  // Intentar parsear directamente\n  const jsonMatch = text.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    parsed = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  // Si falla, devolver mensaje de error\n  parsed = {\n    mensaje: 'Gracias por tu mensaje, te respondo en un momento.',\n    enviarMedia: false,\n    tipoMedia: null,\n    mediaUrl: null,\n    mediaCaption: null,\n    accion: 'SEGUIMIENTO',\n    robotCatalogo: null,\n    emailDestino: null,\n    notaInterna: 'Error parseando JSON de Claude: ' + e.message\n  };\n}\n\n// Pasar datos del detector\nconst detector = $('Code: Robot Detector').item.json;\n\n// Si Claude no captó el email pero el detector sí lo vio, asegurarlo\nif (!parsed.emailDestino && detector.emailEnMensaje && parsed.accion === 'ENVIAR_CATALOGO') {\n  parsed.emailDestino = detector.emailEnMensaje;\n}\n\n// Si hay email en el mensaje y accion es PEDIR_EMAIL, corregir a ENVIAR_CATALOGO\nif (detector.emailEnMensaje && parsed.accion === 'PEDIR_EMAIL') {\n  parsed.accion = 'ENVIAR_CATALOGO';\n  parsed.emailDestino = detector.emailEnMensaje;\n}\n\nreturn {\n  ...parsed,\n  // Pasar datos del lead para los siguientes nodos\n  telefono:       detector.telefono,\n  phoneNumberId:  detector.phoneNumberId,\n  leadId:         detector.leadId,\n  nombre:         detector.nombre,\n  empresa:        detector.empresa,\n  sector:         detector.sector,\n  robotNombre:    detector.robotNombre,\n  robotImg:       detector.robotImg,\n};"
+      },
+      "id": "code-parse-claude",
+      "name": "Code: Parse JSON Claude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 400]
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "id": "check-accion",
+              "leftValue": "={{ $json.accion }}",
+              "rightValue": "ENVIAR_CATALOGO",
+              "operator": { "type": "string", "operation": "equals" }
+            },
+            {
+              "id": "check-email",
+              "leftValue": "={{ $json.emailDestino }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-enviar-catalogo",
+      "name": "IF: ¿ENVIAR_CATALOGO?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1540, 400]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://robot-emailer-production.up.railway.app/send-robot-catalog",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Botmate-Key", "value": "botmate2025seguro" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"robot\":   \"{{ $json.robotCatalogo || 'cc1' }}\",\n  \"email\":   \"{{ $json.emailDestino }}\",\n  \"nombre\":  \"{{ $json.nombre }}\",\n  \"empresa\": \"{{ $json.empresa }}\"\n}",
+        "options": {}
+      },
+      "id": "http-robot-emailer",
+      "name": "HTTP: Robot Emailer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 300]
+    },
+
+    {
+      "parameters": {},
+      "id": "noop-skip-email",
+      "name": "No-op: Skip Email",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1780, 520]
+    },
+
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "input1"
+      },
+      "id": "merge-after-email",
+      "name": "Merge: Después del Email",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2020, 400]
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "id": "check-media",
+              "leftValue": "={{ $json.enviarMedia }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            },
+            {
+              "id": "check-media-url",
+              "leftValue": "={{ $json.mediaUrl }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-enviar-media",
+      "name": "IF: ¿Enviar Media?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2260, 400]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{ $('Code: Robot Detector').item.json.phoneNumberId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $vars.WA_ACCESS_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"messaging_product\": \"whatsapp\",\n  \"recipient_type\": \"individual\",\n  \"to\": \"{{ $('Code: Robot Detector').item.json.telefono }}\",\n  \"type\": \"{{ $json.tipoMedia }}\",\n  \"{{ $json.tipoMedia }}\": {\n    \"link\": \"{{ $json.mediaUrl }}\",\n    \"caption\": \"{{ $json.mediaCaption }}\",\n    \"filename\": \"BotMate-Catalogo.pdf\"\n  }\n}",
+        "options": {}
+      },
+      "id": "http-wa-media",
+      "name": "HTTP: WhatsApp Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2500, 300]
+    },
+
+    {
+      "parameters": {},
+      "id": "noop-skip-media",
+      "name": "No-op: Skip Media",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2500, 520]
+    },
+
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "input1"
+      },
+      "id": "merge-after-media",
+      "name": "Merge: Después de Media",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2740, 400]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{ $('Code: Robot Detector').item.json.phoneNumberId }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $vars.WA_ACCESS_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('Code: Robot Detector').item.json.telefono }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"{{ $('Code: Parse JSON Claude').item.json.accion === 'ENVIAR_CATALOGO' && $('HTTP: Robot Emailer').item ? $('HTTP: Robot Emailer').item.json.msg_wa : $('Code: Parse JSON Claude').item.json.mensaje }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "http-wa-texto",
+      "name": "HTTP: WhatsApp Texto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2980, 400]
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "id": "check-escalar",
+              "leftValue": "={{ $('Code: Parse JSON Claude').item.json.accion }}",
+              "rightValue": "ESCALAR_IVAN",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "if-escalar-ivan",
+      "name": "IF: ¿Escalar a Ivan?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3220, 400]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $vars.TG_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"chat_id\": \"{{ $vars.TG_CHAT_ID }}\",\n  \"text\": \"🚨 ESCALAR A IVAN\\n\\nCliente: {{ $('Code: Robot Detector').item.json.nombre }}\\nEmpresa: {{ $('Code: Robot Detector').item.json.empresa }}\\nTeléfono: {{ $('Code: Robot Detector').item.json.telefono }}\\nMensaje: {{ $('Code: Robot Detector').item.json.mensaje_entrante }}\\n\\nNota IA: {{ $('Code: Parse JSON Claude').item.json.notaInterna }}\",\n  \"parse_mode\": \"HTML\"\n}",
+        "options": {}
+      },
+      "id": "http-telegram",
+      "name": "HTTP: Telegram Alerta Ivan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3460, 280]
+    },
+
+    {
+      "parameters": {},
+      "id": "noop-no-escalar",
+      "name": "No-op: No Escalar",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3460, 520]
+    },
+
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "input1"
+      },
+      "id": "merge-after-telegram",
+      "name": "Merge: Final",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [3700, 400]
+    },
+
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appdBxw9JhiHU9FXI",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblO571b5ojGbLHnX",
+          "mode": "id"
+        },
+        "id": "={{ $('Code: Robot Detector').item.json.leadId }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Ultimo_Evento": "=💬 WA: {{ $('Code: Robot Detector').item.json.mensaje_entrante.substring(0,60) }}",
+            "Historial_WA": "={{ ($('Code: Robot Detector').item.json.historial_wa || '') + '\\n[' + new Date().toISOString().substring(0,10) + '] Cliente: ' + $('Code: Robot Detector').item.json.mensaje_entrante.substring(0,100) + '\\n[IA] ' + $('Code: Parse JSON Claude').item.json.mensaje.substring(0,100) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "airtable-update-lead",
+      "name": "Airtable: Actualizar Lead",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [3940, 400],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "airtable-botmate",
+          "name": "Airtable BotMate"
+        }
+      }
+    }
+
+  ],
+
+  "connections": {
+    "Webhook — WhatsApp Entrada": {
+      "main": [
+        [
+          { "node": "Webhook Response 200", "type": "main", "index": 0 },
+          { "node": "Code: Parse WhatsApp", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Code: Parse WhatsApp": {
+      "main": [[{ "node": "Airtable: Buscar Lead", "type": "main", "index": 0 }]]
+    },
+    "Airtable: Buscar Lead": {
+      "main": [[{ "node": "Code: Robot Detector", "type": "main", "index": 0 }]]
+    },
+    "Code: Robot Detector": {
+      "main": [[{ "node": "HTTP: Claude Agente", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Claude Agente": {
+      "main": [[{ "node": "Code: Parse JSON Claude", "type": "main", "index": 0 }]]
+    },
+    "Code: Parse JSON Claude": {
+      "main": [[{ "node": "IF: ¿ENVIAR_CATALOGO?", "type": "main", "index": 0 }]]
+    },
+    "IF: ¿ENVIAR_CATALOGO?": {
+      "main": [
+        [{ "node": "HTTP: Robot Emailer", "type": "main", "index": 0 }],
+        [{ "node": "No-op: Skip Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP: Robot Emailer": {
+      "main": [[{ "node": "Merge: Después del Email", "type": "main", "index": 0 }]]
+    },
+    "No-op: Skip Email": {
+      "main": [[{ "node": "Merge: Después del Email", "type": "main", "index": 1 }]]
+    },
+    "Merge: Después del Email": {
+      "main": [[{ "node": "IF: ¿Enviar Media?", "type": "main", "index": 0 }]]
+    },
+    "IF: ¿Enviar Media?": {
+      "main": [
+        [{ "node": "HTTP: WhatsApp Media", "type": "main", "index": 0 }],
+        [{ "node": "No-op: Skip Media", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP: WhatsApp Media": {
+      "main": [[{ "node": "Merge: Después de Media", "type": "main", "index": 0 }]]
+    },
+    "No-op: Skip Media": {
+      "main": [[{ "node": "Merge: Después de Media", "type": "main", "index": 1 }]]
+    },
+    "Merge: Después de Media": {
+      "main": [[{ "node": "HTTP: WhatsApp Texto", "type": "main", "index": 0 }]]
+    },
+    "HTTP: WhatsApp Texto": {
+      "main": [[{ "node": "IF: ¿Escalar a Ivan?", "type": "main", "index": 0 }]]
+    },
+    "IF: ¿Escalar a Ivan?": {
+      "main": [
+        [{ "node": "HTTP: Telegram Alerta Ivan", "type": "main", "index": 0 }],
+        [{ "node": "No-op: No Escalar", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP: Telegram Alerta Ivan": {
+      "main": [[{ "node": "Merge: Final", "type": "main", "index": 0 }]]
+    },
+    "No-op: No Escalar": {
+      "main": [[{ "node": "Merge: Final", "type": "main", "index": 1 }]]
+    },
+    "Merge: Final": {
+      "main": [[{ "node": "Airtable: Actualizar Lead", "type": "main", "index": 0 }]]
+    }
+  },
+
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+
+  "staticData": null,
+  "tags": [{ "name": "BotMate" }],
+  "meta": {
+    "instanceId": "botmate-crm"
+  }
+}
