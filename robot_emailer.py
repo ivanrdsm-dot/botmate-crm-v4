@@ -17,8 +17,7 @@ from flask import Flask, request, jsonify
 import os, json
 from pathlib import Path
 from datetime import datetime
-from urllib.request import urlopen, Request
-from urllib.error import URLError
+import requests as http_requests
 
 app = Flask(__name__)
 
@@ -404,29 +403,15 @@ ventas@botmate.mx · +52 56 4666 5718 · botmate.mx
         'reply_to': 'ventas@botmate.mx',
     }
 
-    body = json.dumps(payload).encode('utf-8')
-    req  = Request(
+    resp = http_requests.post(
         'https://api.resend.com/emails',
-        data=body,
-        headers={
-            'Authorization':  f'Bearer {RESEND_KEY}',
-            'Content-Type':   'application/json',
-            'Accept':         'application/json',
-        },
-        method='POST'
+        json=payload,
+        headers={'Authorization': f'Bearer {RESEND_KEY}'},
+        timeout=30,
     )
-    try:
-        with urlopen(req, timeout=30) as resp:
-            d = json.loads(resp.read())
-        if not d.get('id'):
-            raise RuntimeError(f"Resend error: {d.get('message', d)}")
-    except URLError as e:
-        # Capture Resend error body for debugging
-        err_body = ''
-        if hasattr(e, 'read'):
-            try: err_body = e.read().decode('utf-8')
-            except: pass
-        raise RuntimeError(f"Resend HTTP {getattr(e, 'code', '?')}: {err_body or str(e)}")
+    d = resp.json()
+    if not d.get('id'):
+        raise RuntimeError(f"Resend {resp.status_code}: {d.get('message', d)}")
 
 # ── FLASK ENDPOINTS ───────────────────────────────────────────────────────────
 @app.route('/health', methods=['GET'])
@@ -436,23 +421,13 @@ def health():
 
 @app.route('/test-resend', methods=['GET'])
 def test_resend():
-    """Diagnóstico: prueba conexión con Resend API + busca curl"""
-    import subprocess, shutil
-    curl_path = shutil.which('curl') or '/usr/bin/curl'
-    curl_exists = os.path.exists(curl_path)
-
-    # Try with requests if available
+    """Diagnóstico: prueba conexión con Resend API"""
     try:
-        import requests as req_lib
-        r = req_lib.get('https://api.resend.com/domains',
-                        headers={'Authorization': f'Bearer {RESEND_KEY}'}, timeout=10)
-        return jsonify({'ok': True, 'method': 'requests', 'status': r.status_code, 'body': r.json()})
-    except ImportError:
-        pass
+        r = http_requests.get('https://api.resend.com/domains',
+                              headers={'Authorization': f'Bearer {RESEND_KEY}'}, timeout=10)
+        return jsonify({'ok': True, 'status': r.status_code, 'resend_reachable': True})
     except Exception as e:
-        pass
-
-    return jsonify({'ok': False, 'curl_path': curl_path, 'curl_exists': curl_exists}), 200
+        return jsonify({'ok': False, 'error': str(e)}), 200
 
 @app.route('/send-robot-catalog', methods=['POST'])
 def send_catalog():
